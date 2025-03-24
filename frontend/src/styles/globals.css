@@ -1,0 +1,64 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
+@import "tailwindcss";
+
+:root {
+  /* Dark theme colors */
+  --background: #121212;
+  --card-background: #1e1e1e;
+  --foreground: #f5f5f5;
+  --primary: #25d366;
+  --primary-hover: #20bd59;
+  --secondary: #075e54;
+  --accent: #34b7f1;
+  --border: #2a2a2a;
+  --muted: #6b7280;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: "Poppins", sans-serif;
+  --font-mono: monospace;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: "Poppins", sans-serif;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--secondary);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
+
+/* Common UI elements */
+.btn-primary {
+  @apply bg-[#25D366] hover:bg-[#20bd59] text-white font-medium py-2 px-4 rounded-md transition-colors duration-200;
+}
+
+.btn-secondary {
+  @apply bg-[#075E54] hover:bg-[#064941] text-white font-medium py-2 px-4 rounded-md transition-colors duration-200;
+}
+
+.card {
+  @apply bg-[#1e1e1e] border border-[#2a2a2a] rounded-lg shadow-lg overflow-hidden;
+}
+
+.input-field {
+  @apply bg-[#2a2a2a] border border-[#3a3a3a] text-white placeholder-gray-400 rounded-md py-2 px-3 
+  focus:ring-[#25D366] focus:border-[#25D366] focus:outline-none transition-colors duration-200;
+}
