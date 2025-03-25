@@ -15,9 +15,9 @@ import {
 } from "lucide-react";
 
 const StarryBackground = () => {
-  const stars = Array.from({ length: 30 }, (_, i) => ({
+  const stars = Array.from({ length: 100 }, (_, i) => ({
     id: i,
-    size: Math.floor(Math.random() * 3) + 1,
+    size: Math.floor(Math.random() * 5) + 1,
     left: `${Math.floor(Math.random() * 100)}%`,
     delayNum: Math.floor(Math.random() * 5),
     durationNum: Math.floor(Math.random() * 5) + 6,
@@ -201,7 +201,7 @@ const LoginComponent = () => {
               damping: 20,
               delay: 0.2,
             }}
-            className="mx-auto bg-green-600 w-20 h-20 rounded-2xl flex items-center justify-center mb-6 shadow-lg"
+            className="mx-auto bg-green-600 w-14 h-14 rounded-2xl flex items-center justify-center mb-6 shadow-lg"
           >
             <Sparkles className="text-white size-6" />
           </motion.div>
@@ -211,7 +211,7 @@ const LoginComponent = () => {
             transition={{ delay: 0.4 }}
             className="text-4xl font-extrabold text-white mb-1"
           >
-            Doer
+            Favr
           </motion.h1>
           <motion.p
             initial={{ opacity: 0 }}

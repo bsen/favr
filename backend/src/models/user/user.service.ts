@@ -2,6 +2,7 @@ import User from "./user.schema.js";
 import jwt from "jsonwebtoken";
 import logger from "../../utils/logger.js";
 import Location from "../location/location.schema.js";
+import { avatars } from "../../utils/avatars.js";
 
 class UserService {
   generateAuthToken(payload: { id: string; phone: string }): string {
@@ -20,6 +21,11 @@ class UserService {
     }
   }
 
+  selectRandomProfilePicture() {
+    const randomIndex = Math.floor(Math.random() * avatars.length);
+    return avatars[randomIndex];
+  }
+
   async createUserWithPhone(phone: string) {
     try {
       logger.info(`Checking for existing user with phone: ${phone}`);
@@ -31,7 +37,10 @@ class UserService {
       }
 
       logger.info(`Creating new user with phone: ${phone}`);
-      return await User.create({ phone });
+      return await User.create({
+        phone,
+        profilePicture: this.selectRandomProfilePicture(),
+      });
     } catch (error) {
       logger.error(
         `Error creating user: ${
@@ -45,7 +54,14 @@ class UserService {
   async findUserById(id: string) {
     try {
       const user = await User.findByPk(id, {
-        attributes: ["id", "phone", "name", "createdAt", "updatedAt"],
+        attributes: [
+          "id",
+          "phone",
+          "name",
+          "profilePicture",
+          "createdAt",
+          "updatedAt",
+        ],
         include: [
           {
             model: Location,

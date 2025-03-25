@@ -6,6 +6,8 @@ import AddressConfirmModal from "../components/HomeComponents/Modals/AddressConf
 import BottomNav from "../components/HomeComponents/BottomNav";
 import PostCard from "../components/HomeComponents/PostCard";
 import ProfileSection from "../components/HomeComponents/ProfileSection";
+import { useInView } from "react-intersection-observer";
+import CreatePostModal from "../components/HomeComponents/Modals/CreatePostModal";
 
 const SAMPLE_LISTINGS = [
   {
@@ -90,6 +92,11 @@ const HomePage = () => {
   });
   const [userData, setUserData] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [posts, setPosts] = useState([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const { ref, inView } = useInView();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -112,7 +119,7 @@ const HomePage = () => {
         );
         const data = await response.json();
 
-        if (data.user) {
+        if (response.ok && data.user) {
           setUserData(data.user);
           setName(data.user.name || "");
           if (data.user.location) {
@@ -125,20 +132,67 @@ const HomePage = () => {
               country: data.user.location.country || "",
             });
           }
-        }
 
-        if (!data.user.name) {
-          setShowNameModal(true);
-        } else if (!data.user.location) {
-          setShowLocationModal(true);
+          if (!data.user.name) {
+            setShowNameModal(true);
+          } else if (!data.user.location) {
+            setShowLocationModal(true);
+          }
+        } else {
+          console.error(
+            "Error fetching user details:",
+            data.message || "Unknown error"
+          );
+          localStorage.removeItem("auth_token");
+          router.push("/login");
         }
       } catch (error) {
         console.error("Error fetching user details:", error);
+        localStorage.removeItem("auth_token");
+        router.push("/login");
       }
     };
 
     checkAuth();
   }, [router]);
+
+  useEffect(() => {
+    if (inView && hasMore && !loading && userData?.location) {
+      fetchPosts(page);
+    }
+  }, [inView, hasMore, page, userData?.location]);
+
+  const fetchPosts = async (pageNum) => {
+    if (loading || !userData?.location) return;
+
+    setLoading(true);
+    try {
+      const response = await fetch(
+        `http://localhost:8000/api/v1/post/nearby?latitude=${userData.location.latitude}&longitude=${userData.location.longitude}&radius=5&page=${pageNum}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setPosts((prev) =>
+          pageNum === 1 ? data.posts : [...prev, ...data.posts]
+        );
+        setHasMore(data.hasMore);
+        if (data.hasMore) {
+          setPage((prev) => prev + 1);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching posts:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleUpdateName = async (e) => {
     e.preventDefault();
@@ -312,14 +366,35 @@ const HomePage = () => {
     setShowLocationModal(true);
   };
 
+  const handleCreatePost = async (formData) => {
+    try {
+      const response = await fetch("http://localhost:8000/api/v1/post", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        setShowCreateModal(false);
+        // Refresh posts
+        setPage(1);
+        setPosts([]);
+        fetchPosts(1);
+      }
+    } catch (error) {
+      console.error("Error creating post:", error);
+    }
+  };
+
   const renderHeader = () => {
     if (activeTab === "feed" || activeTab === "browse") {
       return (
         <div className="bg-[#1e1e1e] sticky top-0 z-10 p-4 border-b border-[#2a2a2a]">
           <div className="flex items-center justify-between mb-2">
-            <h1 className="text-white text-xl font-bold">
-              Favr
-            </h1>
+            <h1 className="text-white text-xl font-bold">Favr</h1>
             <div className="flex items-center space-x-2">
               <button className="p-2 text-gray-400">
                 <svg
@@ -428,9 +503,20 @@ const HomePage = () => {
       case "browse":
         return (
           <div className="space-y-4">
-            {SAMPLE_LISTINGS.map((listing) => (
-              <PostCard key={listing.id} {...listing} />
+            {posts.map((post) => (
+              <PostCard
+                key={post.id}
+                {...post}
+                distance={post.distance}
+                author={post.author?.name || "Anonymous"}
+              />
             ))}
+            {loading && (
+              <div className="text-center py-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#25D366] mx-auto"></div>
+              </div>
+            )}
+            <div ref={ref} style={{ height: "20px" }} />
           </div>
         );
       case "messages":
@@ -462,6 +548,26 @@ const HomePage = () => {
 
       <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
 
+      <button
+        onClick={() => setShowCreateModal(true)}
+        className="fixed right-4 bottom-20 bg-[#25D366] text-white p-4 rounded-full shadow-lg"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-6 w-6"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 4v16m8-8H4"
+          />
+        </svg>
+      </button>
+
       <NameModal
         show={showNameModal}
         name={name}
@@ -485,6 +591,13 @@ const HomePage = () => {
         setEditableAddress={setEditableAddress}
         onGetNewLocation={handleGetNewLocation}
         onConfirm={handleAddressConfirm}
+      />
+
+      <CreatePostModal
+        show={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSubmit={handleCreatePost}
+        loading={loading}
       />
     </div>
   );

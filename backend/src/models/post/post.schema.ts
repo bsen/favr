@@ -7,13 +7,21 @@ enum PostType {
   Announcement = "announcement",
 }
 
+enum PostStatus {
+  Active = "active",
+  Completed = "completed",
+  Cancelled = "cancelled",
+}
+
 class Post extends Model {
   id!: number;
   title!: string;
-  content?: string;
+  description?: string;
+  price?: number;
   imageUrls?: string[];
-  userId!: number;
-  locationId?: string;
+  userId!: string;
+  locationId!: string;
+  status!: PostStatus;
   type!: PostType;
   createdAt!: Date;
   updatedAt!: Date;
@@ -30,18 +38,35 @@ Post.init(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    content: {
+    description: {
       type: DataTypes.TEXT,
+    },
+    price: {
+      type: DataTypes.INTEGER,
     },
     imageUrls: {
       type: DataTypes.ARRAY(DataTypes.STRING),
     },
     userId: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.UUID,
       allowNull: false,
+      references: {
+        model: "Users",
+        key: "id",
+      },
     },
     locationId: {
-      type: DataTypes.STRING,
+      type: DataTypes.UUID,
+      allowNull: false,
+      references: {
+        model: "Locations",
+        key: "id",
+      },
+    },
+    status: {
+      type: DataTypes.ENUM("active", "cancelled", "completed"),
+      allowNull: false,
+      defaultValue: "active",
     },
     type: {
       type: DataTypes.ENUM("request", "offer", "announcement"),

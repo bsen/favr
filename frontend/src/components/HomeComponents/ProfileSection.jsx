@@ -15,7 +15,11 @@ const ProfileSection = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <div className="h-16 w-16 rounded-full bg-[#25D366] flex items-center justify-center text-white text-2xl font-bold">
-              {name ? name[0].toUpperCase() : "?"}
+              <img
+                src={`/avatars/${userData?.profilePicture}`}
+                alt="Profile"
+                className="w-full h-full object-cover rounded-full"
+              />
             </div>
             <div className="ml-4">
               <h2 className="text-white text-xl font-semibold">
