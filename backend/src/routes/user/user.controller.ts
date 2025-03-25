@@ -129,12 +129,12 @@ const updateUserDetails = async (req: AuthRequest, res: Response) => {
   }
 };
 
-const updateUserLocation = async (req: AuthRequest, res: Response) => {
+const fetchLocationAddress = async (req: AuthRequest, res: Response) => {
   try {
     const { longitude, latitude } = req.body;
 
     if (!longitude || !latitude) {
-      logger.warn("Missing coordinates in updateUserLocation request");
+      logger.warn("Missing coordinates in fetchLocationAddress request");
       res.status(400).json({ message: "Longitude and latitude are required" });
       return;
     }
@@ -145,15 +145,60 @@ const updateUserLocation = async (req: AuthRequest, res: Response) => {
       return;
     }
 
-    const location = await locationService.createOrUpdateLocation(
-      req.user.id,
-      longitude,
-      latitude
+    const result = await locationService.getLocationDetails(
+      parseFloat(longitude),
+      parseFloat(latitude)
     );
+
+    if (!result.success) {
+      throw new Error(result.message);
+    }
+
+    res.status(200).json({
+      addressDetails: result.data,
+      message: "Address fetched successfully for validation",
+    });
+  } catch (error) {
+    logger.error(
+      `Error in fetchLocationAddress controller: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
+    res.status(400).json({
+      message:
+        error instanceof Error ? error.message : "Failed to fetch address",
+    });
+  }
+};
+
+const updateUserLocation = async (req: AuthRequest, res: Response) => {
+  try {
+    const { addressDetails } = req.body;
+
+    if (!addressDetails) {
+      logger.warn("Missing address details in updateUserLocation request");
+      res.status(400).json({ message: "Address details are required" });
+      return;
+    }
+
+    if (!req.user) {
+      logger.warn("User not found in request");
+      res.status(401).json({ message: "User not authenticated" });
+      return;
+    }
+
+    const result = await locationService.createOrUpdateLocation(
+      req.user.id,
+      addressDetails
+    );
+
+    if (!result.success) {
+      throw new Error(result.message);
+    }
 
     logger.info(`Location updated successfully for user: ${req.user.id}`);
     res.status(200).json({
-      location,
+      location: result.data,
       message: "Location updated successfully",
     });
   } catch (error) {
@@ -174,5 +219,6 @@ export default {
   verifyOTP,
   getUserDetails,
   updateUserDetails,
+  fetchLocationAddress,
   updateUserLocation,
 };
