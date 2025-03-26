@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
   KeyboardAvoidingView,
@@ -20,24 +20,28 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 const StarryBackground = () => {
-  const stars = Array.from({ length: 100 }, (_, i) => ({
-    id: i,
-    size: Math.floor(Math.random() * 3) + 1,
-    position: {
-      left: Math.random() * 100,
-      top: -10,
-    },
-    duration: Math.random() * 5000 + 3000,
-    opacity: new Animated.Value(0),
-    translateY: new Animated.Value(-10),
-  }));
+  const stars = useMemo(
+    () =>
+      Array.from({ length: 50 }, (_, i) => ({
+        id: i,
+        size: Math.floor(Math.random() * 3) + 1,
+        position: {
+          left: Math.random() * 100,
+          top: -(Math.random() * 500),
+        },
+        duration: 6000 + Math.random() * 4000,
+        opacity: new Animated.Value(0),
+        translateY: new Animated.Value(-10),
+      })),
+    []
+  );
 
   useEffect(() => {
     const animations = stars.map((star) => {
       const animation = Animated.parallel([
         Animated.sequence([
           Animated.timing(star.opacity, {
-            toValue: 0.3,
+            toValue: 0.7,
             duration: star.duration * 0.3,
             useNativeDriver: true,
           }),
@@ -60,7 +64,7 @@ const StarryBackground = () => {
     animations.forEach((animation, index) => {
       setTimeout(() => {
         animation.start();
-      }, Math.random() * 3000);
+      }, index * 100);
     });
 
     return () => {
@@ -84,7 +88,7 @@ const StarryBackground = () => {
         >
           <View
             style={[
-              tw`bg-green-300/30 rounded-full`,
+              tw`bg-white rounded-full`,
               { width: star.size, height: star.size },
             ]}
           />
@@ -129,7 +133,7 @@ export default function Login() {
 
     try {
       const response = await fetch(
-        "http://localhost:8000/api/v1/user/send-otp",
+        "https://ec0b-27-7-163-184.ngrok-free.app/api/v1/user/send-otp",
         {
           method: "POST",
           headers: {
@@ -175,7 +179,7 @@ export default function Login() {
 
     try {
       const response = await fetch(
-        "http://localhost:8000/api/v1/user/verify-otp",
+        "https://ec0b-27-7-163-184.ngrok-free.app/api/v1/user/verify-otp",
         {
           method: "POST",
           headers: {
@@ -236,7 +240,7 @@ export default function Login() {
               color="white"
             />
           </View>
-          <Text style={tw`text-4xl font-bold text-white mb-2`}>Favr</Text>
+          <Text style={tw`text-4xl font-bold text-white mb-2`}>favr</Text>
           <Text style={tw`text-gray-300 text-sm`}>
             {showOtp
               ? "Enter the verification code"
@@ -279,7 +283,7 @@ export default function Login() {
                   onChangeText={setPhoneNumber}
                   style={[
                     tw`bg-[#2a2a2a] rounded-lg pl-12 pr-12 h-12 text-white`,
-                    { fontSize: 16 },
+                    { fontSize: 16, color: "white" },
                   ]}
                   keyboardType="number-pad"
                   maxLength={10}
@@ -303,7 +307,7 @@ export default function Login() {
                 loading={isLoading}
                 style={tw`bg-green-600 rounded-lg`}
                 contentStyle={tw`h-12`}
-                labelStyle={tw`text-sm font-medium`}
+                labelStyle={tw`text-sm font-medium text-white`}
                 icon={({ size, color }) => (
                   <MaterialCommunityIcons
                     name="lock"
@@ -334,6 +338,7 @@ export default function Login() {
                     outlineColor="#3a3a3a"
                     activeOutlineColor="#22c55e"
                     textColor="white"
+                    theme={{ colors: { text: "white" } }}
                   />
                 ))}
               </View>
@@ -359,8 +364,9 @@ export default function Login() {
                 mode="contained"
                 onPress={handleVerifyOtp}
                 loading={isLoading}
-                style={tw`bg-green-600`}
-                contentStyle={tw`py-2`}
+                style={tw`bg-green-600 rounded-lg`}
+                contentStyle={tw`h-12`}
+                labelStyle={tw`text-sm font-medium text-white`}
                 icon={isLoading ? undefined : "check-circle"}
               >
                 {isLoading ? "Verifying..." : "Verify & Continue"}
