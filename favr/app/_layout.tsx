@@ -1,13 +1,20 @@
-import { PaperProvider } from "react-native-paper";
 import { Stack } from "expo-router";
+import { AuthProvider } from "./contexts/AuthContext";
+import { PostProvider } from "./contexts/PostContext";
 
-export default function RootLayout() {
+export default function Layout() {
   return (
-    <PaperProvider>
-      <Stack>
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="login" options={{ headerShown: false }} />
-      </Stack>
-    </PaperProvider>
+    <AuthProvider>
+      <PostProvider>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+          }}
+        >
+          <Stack.Screen name="index" options={{ headerShown: false }} />
+          <Stack.Screen name="login" options={{ headerShown: false }} />
+        </Stack>
+      </PostProvider>
+    </AuthProvider>
   );
 }

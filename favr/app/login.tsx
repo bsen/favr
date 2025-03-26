@@ -18,6 +18,7 @@ import { router } from "expo-router";
 import tw from "twrnc";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useAuth } from "./contexts/AuthContext";
 
 const StarryBackground = () => {
   const stars = useMemo(
@@ -99,12 +100,10 @@ const StarryBackground = () => {
 };
 
 export default function Login() {
+  const { isLoading, error, success, sendOtp, verifyOtp } = useAuth();
   const [phoneNumber, setPhoneNumber] = useState("");
   const [otp, setOtp] = useState(["", "", "", ""]);
   const [showOtp, setShowOtp] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const otpInputRefs = Array(4)
     .fill(0)
     .map(() => React.createRef<RNTextInput>());
@@ -121,93 +120,28 @@ export default function Login() {
   };
 
   const handleSendOtp = async () => {
-    setError("");
-    setSuccess("");
-
     if (!phoneNumber || phoneNumber.length < 10) {
-      setError("Please enter a valid phone number");
       return;
     }
 
-    setIsLoading(true);
-
-    try {
-      const response = await fetch(
-        "https://ec0b-27-7-163-184.ngrok-free.app/api/v1/user/send-otp",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            phone: `+91${phoneNumber}`,
-          }),
+    const success = await sendOtp(phoneNumber);
+    if (success) {
+      setShowOtp(true);
+      setTimeout(() => {
+        if (otpInputRefs[0].current) {
+          otpInputRefs[0].current.focus();
         }
-      );
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setSuccess(data.message);
-        setShowOtp(true);
-        setTimeout(() => {
-          if (otpInputRefs[0].current) {
-            otpInputRefs[0].current.focus();
-          }
-        }, 100);
-      } else {
-        setError(data.message || "Failed to send OTP");
-      }
-    } catch (error) {
-      setError("Network error. Please try again.");
-    } finally {
-      setIsLoading(false);
+      }, 100);
     }
   };
 
-  const handleVerifyOtp = async () => {
-    setError("");
-    setSuccess("");
-
+  const handleVerifyOtp = () => {
     const otpValue = otp.join("");
     if (otpValue.length !== 4) {
-      setError("Please enter the complete OTP");
       return;
     }
 
-    setIsLoading(true);
-
-    try {
-      const response = await fetch(
-        "https://ec0b-27-7-163-184.ngrok-free.app/api/v1/user/verify-otp",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            phone: `+91${phoneNumber}`,
-            otp: otpValue,
-          }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setSuccess(data.message);
-        await AsyncStorage.setItem("auth_token", data.auth_token);
-        await AsyncStorage.setItem("userPhone", phoneNumber);
-        await AsyncStorage.setItem("userData", JSON.stringify(data.user));
-        router.replace("/");
-      } else {
-        setError(data.message || "Invalid OTP. Please try again.");
-      }
-    } catch (error) {
-      setError("Network error. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
+    verifyOtp(phoneNumber, otpValue);
   };
 
   const handleOtpChange = (index: number, value: string) => {
@@ -274,31 +208,27 @@ export default function Login() {
               <Text style={tw`text-sm font-medium text-gray-300 mb-2`}>
                 Phone Number
               </Text>
-              <View style={tw`relative mb-2`}>
-                <View style={tw`absolute z-10 h-full justify-center pl-4`}>
-                  <Text style={tw`text-gray-400`}>+91</Text>
-                </View>
-                <RNTextInput
+              <View style={tw`relative`}>
+                <TextInput
                   value={phoneNumber}
                   onChangeText={setPhoneNumber}
-                  style={[
-                    tw`bg-[#2a2a2a] rounded-lg pl-12 pr-12 h-12 text-white`,
-                    { fontSize: 16, color: "white" },
-                  ]}
+                  mode="outlined"
                   keyboardType="number-pad"
                   maxLength={10}
                   placeholder="Enter your phone number"
+                  right={<TextInput.Icon icon="phone" />}
+                  style={[tw`bg-[#2a2a2a]`, { paddingLeft: 45 }]}
+                  outlineColor="#3a3a3a"
+                  activeOutlineColor="#22c55e"
+                  textColor="white"
                   placeholderTextColor="#9ca3af"
+                  theme={{ colors: { text: "white" } }}
                 />
-                <View style={tw`absolute right-0 h-full justify-center pr-4`}>
-                  <MaterialCommunityIcons
-                    name="phone"
-                    size={20}
-                    color="#9ca3af"
-                  />
+                <View style={tw`absolute left-4 h-full justify-center z-10`}>
+                  <Text style={tw`text-gray-400`}>+91</Text>
                 </View>
               </View>
-              <Text style={tw`text-xs text-gray-400 mb-6`}>
+              <Text style={tw`text-xs text-gray-400 mb-6 mt-2`}>
                 We'll send you a verification code
               </Text>
               <Button
