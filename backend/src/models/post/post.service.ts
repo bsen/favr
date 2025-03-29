@@ -109,7 +109,7 @@ class PostService {
               p.status, p.type, p."createdAt", p."updatedAt",
               l.id as "locationId", l.latitude, l.longitude,
               l.address, l.city, l.state, l."postalCode", l.country,
-              u.id as "userId", u.name, u."profilePicture",
+              u.id as "userId", u.name as "userName", u."profilePicture",
               (6371 * acos(cos(radians(${latitude})) * cos(radians(l.latitude)) * 
               cos(radians(l.longitude) - radians(${longitude})) + 
               sin(radians(${latitude})) * sin(radians(l.latitude)))) AS distance

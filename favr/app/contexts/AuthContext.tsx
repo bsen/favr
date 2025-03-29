@@ -6,15 +6,17 @@ import { API_BASE_URL } from "../../config";
 interface Location {
   latitude: number;
   longitude: number;
-  address?: string;
-  city?: string;
-  state?: string;
-  postalCode?: string;
-  country?: string;
+  address: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
 }
 
 interface UserData {
+  id?: string;
   name?: string;
+  phone?: string;
   location?: Location;
 }
 
@@ -25,10 +27,12 @@ interface AuthContextType {
   sendOtp: (phoneNumber: string) => Promise<boolean>;
   verifyOtp: (phoneNumber: string, otp: string) => Promise<void>;
   updateName: (name: string) => Promise<boolean>;
-  updateLocation: (latitude: number, longitude: number) => Promise<boolean>;
+  updateLocation: (location: Location) => Promise<boolean>;
+  fetchUserDetails: () => Promise<void>;
   logout: () => Promise<void>;
-  error: string;
-  success: string;
+  error: string | null;
+  success: string | null;
+  clearMessages: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -36,8 +40,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [userData, setUserData] = useState<UserData | null>(null);
 
   const sendOtp = async (phoneNumber: string) => {
@@ -110,6 +114,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const fetchUserDetails = async () => {
+    setError("");
+    setIsLoading(true);
+
+    try {
+      const token = await AsyncStorage.getItem("auth_token");
+      const response = await fetch(`${API_BASE_URL}/user/details`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setUserData(data.user);
+        setIsAuthenticated(true);
+      } else {
+        setError(data.message || "Failed to fetch user details");
+        setIsAuthenticated(false);
+      }
+    } catch (error) {
+      setError("Network error. Please try again.");
+      setIsAuthenticated(false);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const updateName = async (name: string) => {
     setError("");
     setSuccess("");
@@ -130,7 +164,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (response.ok) {
         setSuccess("Name updated successfully");
-        setUserData(data.user);
+        setUserData((prev) => ({ ...prev, name }));
         return true;
       } else {
         setError(data.message || "Failed to update name");
@@ -144,7 +178,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const updateLocation = async (latitude: number, longitude: number) => {
+  const updateLocation = async (location: Location) => {
     setError("");
     setSuccess("");
     setIsLoading(true);
@@ -158,7 +192,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          location: { latitude, longitude },
+          addressDetails: {
+            longitude: location.longitude,
+            latitude: location.latitude,
+            address: location.address,
+            city: location.city,
+            state: location.state,
+            postalCode: location.postalCode,
+            country: location.country,
+          },
         }),
       });
 
@@ -166,7 +208,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (response.ok) {
         setSuccess("Location updated successfully");
-        setUserData(data.user);
+        setUserData((prev) => ({ ...prev, location }));
         return true;
       } else {
         setError(data.message || "Failed to update location");
@@ -189,6 +231,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.replace("/login");
   };
 
+  const clearMessages = () => {
+    setSuccess(null);
+    setError(null);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -199,9 +246,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         verifyOtp,
         updateName,
         updateLocation,
+        fetchUserDetails,
         logout,
         error,
         success,
+        clearMessages,
       }}
     >
       {children}

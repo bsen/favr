@@ -1,54 +1,50 @@
 import React from "react";
-import { View } from "react-native";
-import { Text, IconButton } from "react-native-paper";
-import { router } from "expo-router";
+import { View, ScrollView } from "react-native";
+import { Text, Surface } from "react-native-paper";
 import tw from "twrnc";
-import CategoryFilter from "./CategoryFilter";
+import { theme } from "../../theme";
+import { MagnifyingGlassIcon } from "react-native-heroicons/outline";
 
-interface HeaderProps {
-  selectedCategory: string;
-  onSelectCategory: (category: string) => void;
-  onLogout: () => void;
-}
-
-const Header = ({
-  selectedCategory,
-  onSelectCategory,
-  onLogout,
-}: HeaderProps) => {
+export default function Header() {
+  const categories = [
+    "offer",
+    "request",
+    "community",
+    "events",
+    "jobs",
+    "services",
+    "products",
+  ];
   return (
-    <View style={tw`bg-gray-900 border-b border-gray-800`}>
-      <View style={tw`flex-row justify-between items-center p-4`}>
-        <Text variant="titleLarge" style={tw`text-white font-bold`}>
-          Favr
+    <Surface
+      style={tw`bg-[${theme.dark.background.secondary}] border-b border-[${theme.dark.background.border}] h-[112px]`}
+    >
+      <View style={tw`flex-row items-center justify-between h-1/2 px-4`}>
+        <Text style={tw`text-2xl font-bold text-[${theme.dark.text.primary}]`}>
+          favr
         </Text>
-        <View style={tw`flex-row items-center space-x-2`}>
-          <IconButton
-            icon="filter-variant"
-            iconColor="white"
-            onPress={() => {}}
-            style={tw`bg-gray-800`}
-          />
-          <IconButton
-            icon="magnify"
-            iconColor="white"
-            onPress={() => {}}
-            style={tw`bg-gray-800`}
-          />
-          <IconButton
-            icon="logout"
-            iconColor="white"
-            onPress={onLogout}
-            style={tw`bg-gray-800`}
-          />
+        <View style={tw`flex-row items-center gap-2`}>
+          <MagnifyingGlassIcon size={24} color={theme.dark.text.primary} />
         </View>
       </View>
-      <CategoryFilter
-        selectedCategory={selectedCategory}
-        onSelectCategory={onSelectCategory}
-      />
-    </View>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={tw`gap-2 flex items-center justify-center mx-4`}
+      >
+        {categories.map((category) => (
+          <View
+            key={category}
+            style={tw`bg-[${theme.dark.button.primary.background}] h-8 px-4 flex items-center justify-center rounded-full`}
+          >
+            <Text
+              style={tw`text-[${theme.dark.button.primary.text}] text-center font-medium capitalize`}
+            >
+              {category}
+            </Text>
+          </View>
+        ))}
+      </ScrollView>
+    </Surface>
   );
-};
-
-export default Header;
+}

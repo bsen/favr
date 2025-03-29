@@ -19,6 +19,7 @@ import tw from "twrnc";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useAuth } from "./contexts/AuthContext";
+import { theme } from "../theme";
 
 const StarryBackground = () => {
   const stars = useMemo(
@@ -145,37 +146,85 @@ export default function Login() {
   };
 
   const handleOtpChange = (index: number, value: string) => {
-    if (value && !/^\d*$/.test(value)) return;
+    for (let i = 0; i < index; i++) {
+      if (!otp[i]) {
+        otpInputRefs[0].current?.focus();
+        return;
+      }
+    }
+
+    if (value.length > 1) {
+      const numbers = value.replace(/\D/g, "").slice(0, 4).split("");
+      const newOtp = [...otp];
+
+      newOtp.fill("");
+
+      numbers.forEach((num, idx) => {
+        newOtp[idx] = num;
+      });
+
+      setOtp(newOtp);
+
+      const nextEmptyIndex = newOtp.findIndex((val) => !val);
+      const focusIndex = nextEmptyIndex === -1 ? 3 : nextEmptyIndex;
+      otpInputRefs[focusIndex].current?.focus();
+      return;
+    }
+
+    const lastChar = value.slice(-1);
+
+    if (value && !/^\d$/.test(lastChar)) {
+      return;
+    }
 
     const newOtp = [...otp];
-    newOtp[index] = value;
+    newOtp[index] = lastChar;
     setOtp(newOtp);
 
-    if (value && index < 3 && otpInputRefs[index + 1].current) {
-      otpInputRefs[index + 1].current!.focus();
+    if (lastChar && index < 3) {
+      otpInputRefs[index + 1].current?.focus();
+    }
+  };
+
+  const handleKeyPress = (index: number, e: any) => {
+    if (e.nativeEvent.key === "Backspace") {
+      const newOtp = [...otp];
+
+      if (!newOtp[index] && index > 0) {
+        newOtp[index - 1] = "";
+        setOtp(newOtp);
+        otpInputRefs[index - 1].current?.focus();
+      } else {
+        newOtp[index] = "";
+        setOtp(newOtp);
+      }
     }
   };
 
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={tw`flex-1 bg-[#121212]`}
+      style={tw`flex-1 bg-[${theme.dark.background.primary}]`}
     >
       <StarryBackground />
 
       <View style={tw`flex-1 px-4 justify-center relative z-10`}>
         <View style={tw`items-center mb-8`}>
           <View
-            style={tw`bg-green-600 w-14 h-14 rounded-2xl items-center justify-center mb-6`}
+            style={tw`bg-[${theme.dark.brand.primary}] w-14 h-14 rounded-2xl items-center justify-center mb-6`}
           >
             <MaterialCommunityIcons
               name="star-four-points"
               size={24}
-              color="white"
+              color={theme.dark.text.primary}
             />
           </View>
-          <Text style={tw`text-4xl font-bold text-white mb-2`}>favr</Text>
-          <Text style={tw`text-gray-300 text-sm`}>
+          <Text
+            style={tw`text-4xl font-bold text-[${theme.dark.text.primary}] mb-2`}
+          >
+            favr
+          </Text>
+          <Text style={tw`text-[${theme.dark.text.secondary}] text-sm`}>
             {showOtp
               ? "Enter the verification code"
               : "Sign in to your account"}
@@ -183,29 +232,43 @@ export default function Login() {
         </View>
 
         <Surface
-          style={tw`bg-[#1e1e1e]/80 backdrop-blur-lg border border-[#2a2a2a] p-6 rounded-xl`}
+          style={tw`bg-[${theme.dark.background.secondary}]/80 backdrop-blur-lg border border-[${theme.dark.background.border}] p-6 rounded-xl`}
         >
           {error ? (
             <View
-              style={tw`bg-red-900/30 border border-red-800 rounded-md mb-4 p-3 flex-row items-center`}
+              style={tw`bg-[${theme.dark.brand.error.background}] border border-[${theme.dark.brand.error.border}] rounded-md mb-4 p-3 flex-row items-center`}
             >
-              <IconButton icon="alert-circle" size={20} iconColor="#f87171" />
-              <Text style={tw`text-red-400 flex-1`}>{error}</Text>
+              <IconButton
+                icon="alert-circle"
+                size={20}
+                iconColor={theme.dark.brand.error.text}
+              />
+              <Text style={tw`text-[${theme.dark.brand.error.text}] flex-1`}>
+                {error}
+              </Text>
             </View>
           ) : null}
 
           {success ? (
             <View
-              style={tw`bg-green-900/30 border border-green-800 rounded-md mb-4 p-3 flex-row items-center`}
+              style={tw`bg-[${theme.dark.brand.success.background}] border border-[${theme.dark.brand.success.border}] rounded-md mb-4 p-3 flex-row items-center`}
             >
-              <IconButton icon="check-circle" size={20} iconColor="#4ade80" />
-              <Text style={tw`text-green-400 flex-1`}>{success}</Text>
+              <IconButton
+                icon="check-circle"
+                size={20}
+                iconColor={theme.dark.brand.success.text}
+              />
+              <Text style={tw`text-[${theme.dark.brand.success.text}] flex-1`}>
+                {success}
+              </Text>
             </View>
           ) : null}
 
           {!showOtp ? (
             <>
-              <Text style={tw`text-sm font-medium text-gray-300 mb-2`}>
+              <Text
+                style={tw`text-sm font-medium text-[${theme.dark.text.secondary}] mb-2`}
+              >
                 Phone Number
               </Text>
               <View style={tw`relative`}>
@@ -217,41 +280,40 @@ export default function Login() {
                   maxLength={10}
                   placeholder="Enter your phone number"
                   right={<TextInput.Icon icon="phone" />}
-                  style={[tw`bg-[#2a2a2a]`, { paddingLeft: 45 }]}
-                  outlineColor="#3a3a3a"
-                  activeOutlineColor="#22c55e"
-                  textColor="white"
-                  placeholderTextColor="#9ca3af"
-                  theme={{ colors: { text: "white" } }}
+                  style={tw`bg-[${theme.dark.background.tertiary}]`}
+                  outlineColor={theme.dark.background.border}
+                  activeOutlineColor={theme.dark.brand.primary}
+                  textColor={theme.dark.text.primary}
+                  placeholderTextColor={theme.dark.text.secondary}
+                  theme={{ colors: { text: theme.dark.text.primary } }}
                 />
                 <View style={tw`absolute left-4 h-full justify-center z-10`}>
-                  <Text style={tw`text-gray-400`}>+91</Text>
+                  <Text style={tw`text-[${theme.dark.text.secondary}]`}>
+                    +91
+                  </Text>
                 </View>
               </View>
-              <Text style={tw`text-xs text-gray-400 mb-6 mt-2`}>
+              <Text
+                style={tw`text-xs text-[${theme.dark.text.tertiary}] mb-6 mt-2`}
+              >
                 We'll send you a verification code
               </Text>
               <Button
                 mode="contained"
                 onPress={handleSendOtp}
                 loading={isLoading}
-                style={tw`bg-green-600 rounded-lg`}
+                style={tw`bg-[${theme.dark.brand.primary}] rounded-lg`}
                 contentStyle={tw`h-12`}
-                labelStyle={tw`text-sm font-medium text-white`}
-                icon={({ size, color }) => (
-                  <MaterialCommunityIcons
-                    name="lock"
-                    size={size}
-                    color={color}
-                  />
-                )}
+                labelStyle={tw`text-sm font-medium text-[${theme.dark.text.primary}]`}
               >
                 {isLoading ? "Sending code..." : "Send verification code"}
               </Button>
             </>
           ) : (
             <>
-              <Text style={tw`text-sm text-gray-300 mb-3`}>
+              <Text
+                style={tw`text-sm text-[${theme.dark.text.secondary}] mb-3`}
+              >
                 Enter 4-digit code sent to +91 {phoneNumber}
               </Text>
               <View style={tw`flex-row justify-between mb-6`}>
@@ -261,14 +323,16 @@ export default function Login() {
                     ref={otpInputRefs[index]}
                     value={digit}
                     onChangeText={(value) => handleOtpChange(index, value)}
+                    onKeyPress={(e) => handleKeyPress(index, e)}
                     mode="outlined"
-                    style={tw`w-[22%] h-16 bg-[#2a2a2a] text-center text-xl`}
+                    style={tw`w-[22%] h-16 bg-[${theme.dark.background.tertiary}] text-center text-xl`}
                     keyboardType="number-pad"
-                    maxLength={1}
-                    outlineColor="#3a3a3a"
-                    activeOutlineColor="#22c55e"
-                    textColor="white"
-                    theme={{ colors: { text: "white" } }}
+                    maxLength={4}
+                    outlineColor={theme.dark.background.border}
+                    activeOutlineColor={theme.dark.brand.primary}
+                    textColor={theme.dark.text.primary}
+                    theme={{ colors: { text: theme.dark.text.primary } }}
+                    selection={{ start: 0, end: 0 }}
                   />
                 ))}
               </View>
@@ -277,7 +341,7 @@ export default function Login() {
                   mode="text"
                   onPress={() => setShowOtp(false)}
                   icon="arrow-left"
-                  textColor="#22c55e"
+                  textColor={theme.dark.brand.primary}
                 >
                   Change number
                 </Button>
@@ -285,7 +349,7 @@ export default function Login() {
                   mode="text"
                   onPress={handleSendOtp}
                   icon="refresh"
-                  textColor="#22c55e"
+                  textColor={theme.dark.brand.primary}
                 >
                   Resend code
                 </Button>
@@ -294,9 +358,9 @@ export default function Login() {
                 mode="contained"
                 onPress={handleVerifyOtp}
                 loading={isLoading}
-                style={tw`bg-green-600 rounded-lg`}
+                style={tw`bg-[${theme.dark.brand.primary}] rounded-lg`}
                 contentStyle={tw`h-12`}
-                labelStyle={tw`text-sm font-medium text-white`}
+                labelStyle={tw`text-sm font-medium text-[${theme.dark.text.primary}]`}
                 icon={isLoading ? undefined : "check-circle"}
               >
                 {isLoading ? "Verifying..." : "Verify & Continue"}
