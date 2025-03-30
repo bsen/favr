@@ -1,6 +1,9 @@
 import React from "react";
 import { View, Text, TouchableOpacity, Platform } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { router, usePathname } from "expo-router";
 import tw from "twrnc";
 import { HomeIcon, UserIcon, PlusIcon } from "react-native-heroicons/outline";
@@ -11,6 +14,7 @@ type AppRoute = "/" | "/create" | "/profile";
 
 export default function AppBar() {
   const pathname = usePathname();
+  const insets = useSafeAreaInsets();
 
   const handleNavigation = (path: AppRoute) => {
     if (pathname !== path) {
@@ -100,32 +104,31 @@ export default function AppBar() {
         right: 0,
       })}
     >
-      <SafeAreaView edges={["bottom"]}>
-        {Platform.OS === "ios" ? (
-          <BlurView
-            tint="dark"
-            intensity={70}
-            style={tw.style(`overflow-hidden`, {
-              borderTopWidth: 1,
-              borderTopColor: theme.dark.background.glass.border,
-              ...commonStyles.glass,
-            })}
-          >
-            <AppBarContent />
-          </BlurView>
-        ) : (
-          <View
-            style={tw.style(`overflow-hidden`, {
-              backgroundColor: theme.dark.background.glass.background,
-              borderTopWidth: 1,
-              borderTopColor: theme.dark.background.glass.border,
-              ...commonStyles.glass,
-            })}
-          >
-            <AppBarContent />
-          </View>
-        )}
-      </SafeAreaView>
+      {Platform.OS === "ios" ? (
+        <BlurView
+          tint="dark"
+          intensity={70}
+          style={tw.style(`overflow-hidden`, {
+            borderTopWidth: 1,
+            borderTopColor: theme.dark.background.glass.border,
+            ...commonStyles.glass,
+            paddingBottom: insets.bottom,
+          })}
+        >
+          <AppBarContent />
+        </BlurView>
+      ) : (
+        <View
+          style={tw.style(`overflow-hidden`, {
+            backgroundColor: theme.dark.background.glass.background,
+            borderTopWidth: 1,
+            borderTopColor: theme.dark.background.glass.border,
+            ...commonStyles.glass,
+          })}
+        >
+          <AppBarContent />
+        </View>
+      )}
     </View>
   );
 }

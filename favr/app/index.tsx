@@ -201,7 +201,7 @@ export default function Home() {
     >
       <ScrollView
         style={tw.style({ height: "100%" })}
-        contentContainerStyle={tw`pt-40 pb-28 px-4`}
+        contentContainerStyle={tw`pt-40 pb-36 px-4`}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}

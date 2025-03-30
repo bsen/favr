@@ -38,11 +38,7 @@ export default function Layout() {
       />
       <AuthProvider>
         <PostProvider>
-          <View
-            style={tw.style(`flex-1 bg-[${theme.dark.background.primary}]`, {
-              paddingBottom: Platform.OS === "ios" ? 85 : 65,
-            })}
-          >
+          <View style={tw`flex-1 bg-[${theme.dark.background.primary}]`}>
             <Tabs
               screenOptions={{
                 headerShown: false,
