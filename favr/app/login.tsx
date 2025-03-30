@@ -34,19 +34,24 @@ const StarryBackground = () => {
           top: Math.random() * 100,
         },
         duration: 6000 + Math.random() * 4000,
-        opacity: new Animated.Value(0.7),
-        translateY: new Animated.Value(0),
+        opacity: new Animated.Value(Math.random()),
+        translateY: new Animated.Value(-10),
       })),
     []
   );
 
   useEffect(() => {
-    const animations = stars.map((star) => {
+    const startAnimation = (star: any) => {
       const animation = Animated.parallel([
         Animated.sequence([
           Animated.timing(star.opacity, {
+            toValue: Math.random() * 0.3 + 0.7,
+            duration: star.duration * 0.5,
+            useNativeDriver: true,
+          }),
+          Animated.timing(star.opacity, {
             toValue: 0,
-            duration: star.duration * 0.7,
+            duration: star.duration * 0.5,
             useNativeDriver: true,
           }),
         ]),
@@ -57,10 +62,19 @@ const StarryBackground = () => {
         }),
       ]);
 
-      return Animated.loop(animation);
-    });
+      return animation;
+    };
 
-    animations.forEach((animation) => animation.start());
+    const animations = stars.map((star, index) => {
+      const delay = index * 100;
+      const animation = Animated.loop(startAnimation(star));
+
+      setTimeout(() => {
+        animation.start();
+      }, delay);
+
+      return animation;
+    });
 
     return () => {
       animations.forEach((animation) => animation.stop());

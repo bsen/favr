@@ -223,12 +223,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
+    router.push("/login");
+
     await AsyncStorage.removeItem("auth_token");
     await AsyncStorage.removeItem("userPhone");
     await AsyncStorage.removeItem("userData");
     setIsAuthenticated(false);
     setUserData(null);
-    router.replace("/login");
   };
 
   const clearMessages = () => {

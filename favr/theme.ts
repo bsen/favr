@@ -1,10 +1,15 @@
 export const theme = {
   dark: {
     background: {
-      primary: "#121212",
-      secondary: "#1e1e1e",
-      tertiary: "#2a2a2a",
-      border: "#2a2a2a",
+      primary: "#000000",
+      secondary: "#101010",
+      tertiary: "#262626",
+      border: "#1d1d1d",
+      glass: {
+        background: "rgba(16, 16, 16, 0.5)",
+        border: "rgba(255, 255, 255, 0.08)",
+        blur: 15,
+      },
     },
 
     text: {
@@ -31,7 +36,7 @@ export const theme = {
 
     button: {
       primary: {
-        background: "#22c55e",
+        background: "rgba(29, 29, 29, 0.8)",
         text: "#ffffff",
       },
     },
@@ -47,6 +52,13 @@ export const commonStyles = {
     sm: "p-2",
     md: "p-4",
     lg: "p-6",
+  },
+  glass: {
+    shadowColor: "rgba(0, 0, 0, 0.1)",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
 };
 
