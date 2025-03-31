@@ -1,11 +1,14 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { View, ScrollView, RefreshControl } from "react-native";
-import { Text, Surface, Avatar } from "react-native-paper";
+import { Text, Surface, Avatar, Button } from "react-native-paper";
 import { router } from "expo-router";
 import tw from "twrnc";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { theme, commonStyles } from "../theme";
 import { usePost } from "./contexts/PostContext";
+import { useAuth } from "./contexts/AuthContext";
+import ReplyModal from "./components/ReplyModal";
+import PostModal from "./components/PostModal";
 
 interface Post {
   id: number;
@@ -15,6 +18,7 @@ interface Post {
   price: number;
   distance: number;
   userName: string;
+  userId: string;
   time: string;
   profilePicture?: string;
 }
@@ -33,7 +37,15 @@ const avatarImages = {
 };
 
 export default function Home() {
-  const { posts, loading, refreshing, fetchPosts, refreshPosts } = usePost();
+  const { posts, loading, refreshing, fetchPosts, refreshPosts, createReply } =
+    usePost();
+  const { userData } = useAuth();
+  const [replyModalVisible, setReplyModalVisible] = useState(false);
+  const [createPostModalVisible, setCreatePostModalVisible] = useState(false);
+  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const [replyPrice, setReplyPrice] = useState("");
+  const [replyDescription, setReplyDescription] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     const initialize = async () => {
@@ -53,12 +65,54 @@ export default function Home() {
     initialize();
   }, []);
 
+  const openReplyModal = (post: Post) => {
+    setSelectedPost(post);
+    setReplyModalVisible(true);
+
+    setReplyPrice(post.price.toString());
+    setReplyDescription("");
+  };
+
+  const closeReplyModal = () => {
+    setReplyModalVisible(false);
+    setSelectedPost(null);
+    setReplyPrice("");
+    setReplyDescription("");
+  };
+
+  const handleSubmitReply = async () => {
+    if (!selectedPost || !replyPrice || !replyDescription) return;
+
+    setSubmitting(true);
+    try {
+      const success = await createReply({
+        postId: selectedPost.id,
+        price: Number(replyPrice),
+        description: replyDescription,
+      });
+
+      if (success) {
+        closeReplyModal();
+      }
+    } catch (error) {
+      console.error("Failed to submit reply:", error);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const isOwnPost = (post: Post) => {
+    return userData?.id === post.userId;
+  };
+
   const PostCard = ({
+    id,
     title,
     description,
     price,
     distance,
     userName,
+    userId,
     time,
     type,
     profilePicture,
@@ -132,6 +186,64 @@ export default function Home() {
           {distance} km away
         </Text>
       </View>
+
+      {!isOwnPost({
+        id,
+        title,
+        description,
+        price,
+        distance,
+        userName,
+        userId,
+        time,
+        type,
+        profilePicture,
+      }) && (
+        <Button
+          mode="contained"
+          style={tw.style(`mt-3 rounded-lg`, {
+            backgroundColor: theme.dark.brand.primary,
+          })}
+          labelStyle={tw`text-white font-medium`}
+          onPress={() =>
+            openReplyModal({
+              id,
+              title,
+              description,
+              price,
+              distance,
+              userName,
+              userId,
+              time,
+              type,
+              profilePicture,
+            })
+          }
+        >
+          Make Offer
+        </Button>
+      )}
+
+      {isOwnPost({
+        id,
+        title,
+        description,
+        price,
+        distance,
+        userName,
+        userId,
+        time,
+        type,
+        profilePicture,
+      }) && (
+        <View
+          style={tw`mt-3 px-2 py-1 rounded-lg self-start bg-[${theme.dark.background.secondary}]`}
+        >
+          <Text style={tw`text-[${theme.dark.text.secondary}] text-xs`}>
+            Your post
+          </Text>
+        </View>
+      )}
     </Surface>
   );
 
@@ -193,6 +305,14 @@ export default function Home() {
     </Surface>
   );
 
+  const showCreatePostModal = () => {
+    setCreatePostModalVisible(true);
+  };
+
+  const closeCreatePostModal = () => {
+    setCreatePostModalVisible(false);
+  };
+
   return (
     <View
       style={tw.style(`bg-[${theme.dark.background.primary}]`, {
@@ -227,6 +347,23 @@ export default function Home() {
           posts.map((post) => <PostCard key={post.id} {...post} />)
         )}
       </ScrollView>
+
+      <ReplyModal
+        visible={replyModalVisible}
+        selectedReply={selectedPost}
+        replyPrice={replyPrice}
+        replyDescription={replyDescription}
+        submitting={submitting}
+        onChangePrice={setReplyPrice}
+        onChangeDescription={setReplyDescription}
+        onClose={closeReplyModal}
+        onSubmit={handleSubmitReply}
+      />
+
+      <PostModal
+        visible={createPostModalVisible}
+        onClose={closeCreatePostModal}
+      />
     </View>
   );
 }

@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { View, ScrollView, TouchableOpacity } from "react-native";
+import {
+  View,
+  ScrollView,
+  TouchableOpacity,
+  Platform,
+  Modal,
+  TouchableWithoutFeedback,
+} from "react-native";
 import {
   Text,
   Surface,
@@ -11,8 +18,7 @@ import {
 } from "react-native-paper";
 import tw from "twrnc";
 import { useAuth } from "./contexts/AuthContext";
-import NameModal from "./components/NameModal";
-import LocationModal from "./components/LocationModal";
+import UserModal from "./components/UserModal";
 import * as Location from "expo-location";
 import { theme, commonStyles } from "../theme";
 
@@ -48,7 +54,9 @@ export default function Profile() {
   const handleUpdateName = async () => {
     const success = await updateName(tempName);
     if (success) {
-      setShowNameModal(false);
+      setTimeout(() => {
+        setShowNameModal(false);
+      }, 3000);
     }
   };
 
@@ -78,8 +86,12 @@ export default function Profile() {
           country: address[0].country || "",
         };
 
-        await updateLocation(locationData);
-        setShowLocationModal(false);
+        const success = await updateLocation(locationData);
+        if (success) {
+          setTimeout(() => {
+            setShowLocationModal(false);
+          }, 3000);
+        }
       }
     } catch (error) {
       setLocationError("Failed to get location");
@@ -99,27 +111,32 @@ export default function Profile() {
 
   return (
     <View style={tw`flex-1 bg-[${theme.dark.background.primary}]`}>
-      <Surface style={tw`bg-[${theme.dark.background.primary}] p-4`}>
-        <Text style={tw`text-xl font-bold text-white`}>Profile</Text>
-      </Surface>
-
-      <ScrollView>
+      <ScrollView
+        style={tw`flex-1`}
+        contentContainerStyle={tw`pb-36 pt-16`}
+        showsVerticalScrollIndicator={false}
+      >
         <Surface
-          style={tw`mx-4 mt-2 bg-[${theme.dark.background.secondary}] rounded-3xl overflow-hidden`}
+          style={tw.style(`mx-5 rounded-2xl overflow-hidden`, {
+            backgroundColor: theme.dark.background.glass.background,
+            borderWidth: 1,
+            borderColor: theme.dark.background.glass.border,
+            ...commonStyles.glass,
+          })}
         >
           <TouchableOpacity
             onPress={() => setShowNameModal(true)}
             style={tw`p-6 flex-row items-center`}
           >
             <Avatar.Text
-              size={72}
+              size={70}
               label={(userData?.name || "Guest")
                 .split(" ")
                 .map((n) => n[0])
                 .join("")}
               style={tw`bg-[${theme.dark.brand.primary}]`}
             />
-            <View style={tw`ml-4 flex-1`}>
+            <View style={tw`ml-5 flex-1`}>
               <Text
                 style={tw`text-[${theme.dark.text.primary}] text-xl font-semibold mb-1`}
               >
@@ -129,124 +146,148 @@ export default function Profile() {
                 {userData?.phone || "No phone number"}
               </Text>
             </View>
-          </TouchableOpacity>
-
-          {userData?.location && (
-            <TouchableOpacity
-              onPress={() => setShowLocationModal(true)}
-              style={tw`px-6 py-5 border-t border-[${theme.dark.background.border}]`}
-            >
-              <View style={tw`flex-row items-center mb-2`}>
-                <IconButton
-                  icon="map-marker"
-                  size={24}
-                  iconColor={theme.dark.brand.primary}
-                  style={tw`m-0 p-0 mr-2`}
-                />
-                <Text style={tw`text-[${theme.dark.text.primary}] font-medium`}>
-                  Current Location
-                </Text>
-              </View>
-              <View style={tw`ml-9`}>
-                <Text
-                  style={tw`text-[${theme.dark.text.secondary}] mb-1 leading-5`}
-                >
-                  {userData.location.address}
-                </Text>
-                <Text
-                  style={tw`text-[${theme.dark.text.secondary}] mb-1 leading-5`}
-                >
-                  {userData.location.city}, {userData.location.state}{" "}
-                  {userData.location.postalCode}
-                </Text>
-                <Text style={tw`text-[${theme.dark.text.secondary}] leading-5`}>
-                  {userData.location.country}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          )}
-        </Surface>
-
-        <Surface
-          style={tw`mx-4 mt-4 bg-[${theme.dark.background.secondary}] rounded-3xl overflow-hidden`}
-        >
-          <TouchableOpacity
-            onPress={() => setShowNameModal(true)}
-            style={tw`flex-row items-center px-6 py-4 border-b border-[${theme.dark.background.border}]`}
-          >
             <IconButton
-              icon="account-edit"
-              size={24}
-              iconColor={theme.dark.brand.primary}
-              style={tw`m-0 p-0 mr-2`}
+              icon="pencil"
+              size={20}
+              iconColor={theme.dark.text.secondary}
+              onPress={() => setShowNameModal(true)}
             />
-            <Text style={tw`text-[${theme.dark.text.primary}]`}>
-              Update Name
-            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             onPress={() => setShowLocationModal(true)}
-            style={tw`flex-row items-center px-6 py-4 border-b border-[${theme.dark.background.border}]`}
+            style={tw`px-6 py-4 border-t border-[${theme.dark.background.border}]`}
           >
-            <IconButton
-              icon="map-marker-plus"
-              size={24}
-              iconColor={theme.dark.brand.primary}
-              style={tw`m-0 p-0 mr-2`}
-            />
-            <Text style={tw`text-[${theme.dark.text.primary}]`}>
-              Update Location
-            </Text>
+            <View style={tw`flex-row items-center justify-between mb-2`}>
+              <View style={tw`flex-row items-center`}>
+                <IconButton
+                  icon="map-marker"
+                  size={22}
+                  iconColor={theme.dark.brand.primary}
+                  style={tw`m-0 p-0 mr-2`}
+                />
+                <Text style={tw`text-[${theme.dark.text.primary}] font-medium`}>
+                  {userData?.location ? "Current Location" : "Add Location"}
+                </Text>
+              </View>
+              <IconButton
+                icon="pencil"
+                size={18}
+                iconColor={theme.dark.text.secondary}
+                onPress={() => setShowLocationModal(true)}
+              />
+            </View>
+            {userData?.location ? (
+              <View style={tw`ml-9`}>
+                <Text
+                  style={tw`text-[${theme.dark.text.secondary}] mb-1 leading-5 text-sm`}
+                >
+                  {userData.location.address}
+                </Text>
+                <Text
+                  style={tw`text-[${theme.dark.text.secondary}] mb-1 leading-5 text-sm`}
+                >
+                  {userData.location.city}, {userData.location.state}{" "}
+                  {userData.location.postalCode}
+                </Text>
+                <Text
+                  style={tw`text-[${theme.dark.text.secondary}] leading-5 text-sm`}
+                >
+                  {userData.location.country}
+                </Text>
+              </View>
+            ) : (
+              <View style={tw`ml-9`}>
+                <Text style={tw`text-[${theme.dark.text.secondary}] text-sm`}>
+                  No location set. Tap to add your location.
+                </Text>
+              </View>
+            )}
           </TouchableOpacity>
-
+        </Surface>
+        <Surface
+          style={tw.style(`mx-5 mt-5 rounded-2xl overflow-hidden`, {
+            backgroundColor: theme.dark.background.glass.background,
+            borderWidth: 1,
+            borderColor: theme.dark.background.glass.border,
+            ...commonStyles.glass,
+          })}
+        >
           <TouchableOpacity
             onPress={logout}
-            style={tw`flex-row items-center px-6 py-4`}
+            style={tw`flex-row items-center px-6 py-3.5`}
           >
             <IconButton
               icon="logout"
-              size={24}
+              size={20}
               iconColor={theme.dark.brand.danger}
-              style={tw`m-0 p-0 mr-2`}
+              style={tw`m-0 p-0 mr-3`}
             />
-            <Text style={tw`text-[${theme.dark.brand.danger}]`}>Logout</Text>
+            <Text style={tw`text-[${theme.dark.brand.danger}] font-medium`}>
+              Logout
+            </Text>
           </TouchableOpacity>
         </Surface>
+
+        <Text
+          style={tw`text-center text-[${theme.dark.text.secondary}] text-xs mt-8 mb-6`}
+        >
+          Favr v1.0.0
+        </Text>
       </ScrollView>
 
-      <NameModal
-        show={showNameModal}
-        name={tempName}
-        setName={setTempName}
-        loading={isLoading}
-        onSubmit={handleUpdateName}
-      />
-
-      <LocationModal
-        show={showLocationModal}
-        loading={isLoading}
-        locationError={locationError}
-        onGetLocation={handleUpdateLocation}
-      />
-
-      <Snackbar
-        visible={showError}
-        onDismiss={() => setShowError(false)}
-        duration={3000}
-        style={tw`bg-[${theme.dark.brand.error.background}]`}
+      <Modal
+        visible={showNameModal}
+        transparent={true}
+        onRequestClose={() => setShowNameModal(false)}
+        animationType="fade"
       >
-        {error}
-      </Snackbar>
+        <TouchableWithoutFeedback onPress={() => setShowNameModal(false)}>
+          <View
+            style={tw`flex-1 justify-center items-center bg-black bg-opacity-50`}
+          >
+            <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+              <View style={tw`w-10/12`}>
+                <UserModal
+                  type="name"
+                  show={showNameModal}
+                  name={tempName}
+                  setName={setTempName}
+                  loading={isLoading}
+                  onSubmit={handleUpdateName}
+                  onClose={() => setShowNameModal(false)}
+                />
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
 
-      <Snackbar
-        visible={showSuccess}
-        onDismiss={() => setShowSuccess(false)}
-        duration={3000}
-        style={tw`bg-[${theme.dark.brand.primary}]`}
+      <Modal
+        visible={showLocationModal}
+        transparent={true}
+        onRequestClose={() => setShowLocationModal(false)}
+        animationType="fade"
       >
-        {success}
-      </Snackbar>
+        <TouchableWithoutFeedback onPress={() => setShowLocationModal(false)}>
+          <View
+            style={tw`flex-1 justify-center items-center bg-black bg-opacity-50`}
+          >
+            <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+              <View style={tw`w-10/12`}>
+                <UserModal
+                  type="location"
+                  show={showLocationModal}
+                  loading={isLoading}
+                  locationError={locationError}
+                  onGetLocation={handleUpdateLocation}
+                  onClose={() => setShowLocationModal(false)}
+                />
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </View>
   );
 }

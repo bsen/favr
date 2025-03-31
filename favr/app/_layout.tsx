@@ -7,10 +7,21 @@ import tw from "twrnc";
 import Header from "./components/Header";
 import AppBar from "./components/AppBar";
 import { theme } from "../theme";
+import React, { useState } from "react";
+import CreatePostModal from "./components/PostModal";
 
 export default function Layout() {
   const pathname = usePathname();
   const isLoginScreen = pathname === "/login";
+  const [createPostModalVisible, setCreatePostModalVisible] = useState(false);
+
+  const showCreatePostModal = () => {
+    setCreatePostModalVisible(true);
+  };
+
+  const closeCreatePostModal = () => {
+    setCreatePostModalVisible(false);
+  };
 
   if (isLoginScreen) {
     return (
@@ -46,11 +57,14 @@ export default function Layout() {
               }}
             >
               <Tabs.Screen name="index" />
-              <Tabs.Screen name="create" />
               <Tabs.Screen name="profile" />
             </Tabs>
             {pathname === "/" && <Header />}
-            <AppBar />
+            <AppBar onCreatePress={showCreatePostModal} />
+            <CreatePostModal
+              visible={createPostModalVisible}
+              onClose={closeCreatePostModal}
+            />
           </View>
         </PostProvider>
       </AuthProvider>

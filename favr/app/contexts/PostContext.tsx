@@ -10,6 +10,7 @@ interface Post {
   price: number;
   distance: number;
   userName: string;
+  userId: string;
   time: string;
   image?: string;
   profilePicture?: string;
@@ -22,6 +23,13 @@ interface CreatePostData {
   type: "offer" | "request";
 }
 
+interface CreateReplyData {
+  postId: number;
+  price: number;
+  description: string;
+  imageUrls?: string[];
+}
+
 interface PostContextType {
   posts: Post[];
   loading: boolean;
@@ -30,6 +38,7 @@ interface PostContextType {
   fetchPosts: (latitude: number, longitude: number) => Promise<void>;
   createPost: (data: CreatePostData) => Promise<boolean>;
   refreshPosts: () => Promise<void>;
+  createReply: (data: CreateReplyData) => Promise<boolean>;
 }
 
 const PostContext = createContext<PostContextType | undefined>(undefined);
@@ -95,6 +104,7 @@ export const PostProvider = ({ children }: { children: React.ReactNode }) => {
         price: post.price || 0,
         distance: Number(post.distance).toFixed(2),
         userName: post.userName || "User",
+        userId: post.userId || "",
         time: getTimeDifference(post.createdAt),
         profilePicture: post.profilePicture,
       }));
@@ -125,7 +135,6 @@ export const PostProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (!response.ok) throw new Error("Failed to create post");
 
-      // Refresh posts if we have location
       if (lastLocation) {
         await fetchPosts(lastLocation.lat, lastLocation.lng);
       }
@@ -144,6 +153,32 @@ export const PostProvider = ({ children }: { children: React.ReactNode }) => {
     setRefreshing(false);
   };
 
+  const createReply = async (data: CreateReplyData): Promise<boolean> => {
+    try {
+      const token = await AsyncStorage.getItem("auth_token");
+      if (!token) throw new Error("No auth token");
+
+      const response = await fetch(`${API_BASE_URL}/reply`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to create reply");
+      }
+
+      return true;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create reply");
+      return false;
+    }
+  };
+
   return (
     <PostContext.Provider
       value={{
@@ -154,6 +189,7 @@ export const PostProvider = ({ children }: { children: React.ReactNode }) => {
         fetchPosts,
         createPost,
         refreshPosts,
+        createReply,
       }}
     >
       {children}

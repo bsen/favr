@@ -4,6 +4,7 @@ import cors from "cors";
 import modules from "./models/index.js";
 import userRoutes from "./routes/user/user.routes.js";
 import postRoutes from "./routes/post/post.routes.js";
+import replyRoutes from "./routes/reply/reply.routes.js";
 import logger from "./utils/logger.js";
 
 dotenv.config();
@@ -20,6 +21,8 @@ app.get("/", (req, res) => {
 
 app.use("/api/v1/user", userRoutes);
 app.use("/api/v1/post", postRoutes);
+app.use("/api/v1/reply", replyRoutes);
+
 const start = async () => {
   try {
     await modules.sequelize.authenticate();

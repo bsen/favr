@@ -12,9 +12,6 @@ interface PostData {
   type?: string;
 }
 
-interface PostWithLocation extends Post {
-  location?: Location;
-}
 
 class PostService {
   async createPost({
