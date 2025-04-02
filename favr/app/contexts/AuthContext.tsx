@@ -26,13 +26,25 @@ interface AuthContextType {
   userData: UserData | null;
   sendOtp: (phoneNumber: string) => Promise<boolean>;
   verifyOtp: (phoneNumber: string, otp: string) => Promise<void>;
-  updateName: (name: string) => Promise<boolean>;
-  updateLocation: (location: Location) => Promise<boolean>;
-  fetchUserDetails: () => Promise<void>;
+  updateUserDetails: (details: {
+    name?: string;
+    bio?: string;
+    addressDetails?: Location;
+  }) => Promise<boolean>;
+  fetchUserDetails: () => Promise<UserData | null>;
+  fetchAddress: (
+    latitude: number,
+    longitude: number
+  ) => Promise<Location | null>;
   logout: () => Promise<void>;
   error: string | null;
   success: string | null;
   clearMessages: () => void;
+  showLocationModal: boolean;
+  setShowLocationModal: (show: boolean) => void;
+  locationError: string | undefined;
+  setLocationError: (error: string | undefined) => void;
+  setUserData: (data: UserData | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -43,6 +55,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [userData, setUserData] = useState<UserData | null>(null);
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [locationError, setLocationError] = useState<string | undefined>();
 
   const sendOtp = async (phoneNumber: string) => {
     setError("");
@@ -132,19 +146,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (response.ok) {
         setUserData(data.user);
         setIsAuthenticated(true);
+        return data.user;
       } else {
         setError(data.message || "Failed to fetch user details");
         setIsAuthenticated(false);
+        return null;
       }
     } catch (error) {
       setError("Network error. Please try again.");
       setIsAuthenticated(false);
+      return null;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const updateName = async (name: string) => {
+  const updateUserDetails = async (details: {
+    name?: string;
+    bio?: string;
+    addressDetails?: Location;
+  }) => {
     setError("");
     setSuccess("");
     setIsLoading(true);
@@ -157,17 +178,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify(details),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        setSuccess("Name updated successfully");
-        setUserData((prev) => ({ ...prev, name }));
+        setSuccess("Details updated successfully");
+        setUserData((prev) => ({ ...prev, ...details }));
         return true;
       } else {
-        setError(data.message || "Failed to update name");
+        setError(data.message || "Failed to update details");
         return false;
       }
     } catch (error) {
@@ -178,45 +199,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const updateLocation = async (location: Location) => {
+  const fetchAddress = async (latitude: number, longitude: number) => {
     setError("");
-    setSuccess("");
     setIsLoading(true);
 
     try {
       const token = await AsyncStorage.getItem("auth_token");
-      const response = await fetch(`${API_BASE_URL}/user/update-location`, {
-        method: "PUT",
+      const response = await fetch(`${API_BASE_URL}/user/fetch-address`, {
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          addressDetails: {
-            longitude: location.longitude,
-            latitude: location.latitude,
-            address: location.address,
-            city: location.city,
-            state: location.state,
-            postalCode: location.postalCode,
-            country: location.country,
-          },
-        }),
+        body: JSON.stringify({ latitude, longitude }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        setSuccess("Location updated successfully");
-        setUserData((prev) => ({ ...prev, location }));
-        return true;
+        return data.addressDetails;
       } else {
-        setError(data.message || "Failed to update location");
-        return false;
+        setError(data.message || "Failed to fetch address");
+        return null;
       }
     } catch (error) {
       setError("Network error. Please try again.");
-      return false;
+      return null;
     } finally {
       setIsLoading(false);
     }
@@ -245,13 +253,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         userData,
         sendOtp,
         verifyOtp,
-        updateName,
-        updateLocation,
+        updateUserDetails,
         fetchUserDetails,
+        fetchAddress,
         logout,
         error,
         success,
         clearMessages,
+        showLocationModal,
+        setShowLocationModal,
+        locationError,
+        setLocationError,
+        setUserData,
       }}
     >
       {children}

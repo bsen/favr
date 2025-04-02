@@ -4,11 +4,13 @@ import { Text, Surface, Avatar, Button } from "react-native-paper";
 import { router } from "expo-router";
 import tw from "twrnc";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Location from "expo-location";
 import { theme, commonStyles } from "../theme";
 import { usePost } from "./contexts/PostContext";
 import { useAuth } from "./contexts/AuthContext";
 import ReplyModal from "./components/ReplyModal";
 import PostModal from "./components/PostModal";
+import UserModal from "./components/UserModal";
 
 interface Post {
   id: number;
@@ -23,29 +25,35 @@ interface Post {
   profilePicture?: string;
 }
 
-const avatarImages = {
-  "alien.png": require("../public/avatars/alien.png"),
-  "anaconda.png": require("../public/avatars/anaconda.png"),
-  "bird.png": require("../public/avatars/bird.png"),
-  "butterfly.png": require("../public/avatars/butterfly.png"),
-  "cow.png": require("../public/avatars/cow.png"),
-  "deer.png": require("../public/avatars/deer.png"),
-  "jacutinga.png": require("../public/avatars/jacutinga.png"),
-  "jaguar.png": require("../public/avatars/jaguar.png"),
-  "panda.png": require("../public/avatars/panda.png"),
-  "turtle.png": require("../public/avatars/turtle.png"),
-};
-
 export default function Home() {
   const { posts, loading, refreshing, fetchPosts, refreshPosts, createReply } =
     usePost();
-  const { userData } = useAuth();
+  const {
+    userData,
+    showLocationModal,
+    setShowLocationModal,
+    isLoading,
+    locationError,
+    setLocationError,
+    updateUserDetails,
+    fetchAddress,
+    fetchUserDetails,
+  } = useAuth();
   const [replyModalVisible, setReplyModalVisible] = useState(false);
   const [createPostModalVisible, setCreatePostModalVisible] = useState(false);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [replyPrice, setReplyPrice] = useState("");
   const [replyDescription, setReplyDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [locationData, setLocationData] = useState<{
+    address: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+    latitude: number;
+    longitude: number;
+  } | null>(null);
 
   useEffect(() => {
     const initialize = async () => {
@@ -55,10 +63,20 @@ export default function Home() {
         return;
       }
 
-      try {
-        await fetchPosts(12.9739777, 77.6384004);
-      } catch (error) {
-        console.error("Failed to fetch posts:", error);
+      const userDetails = await fetchUserDetails();
+      if (!userDetails || !userDetails.id) return;
+
+      if (!userDetails.location?.latitude || !userDetails.location?.longitude) {
+        setShowLocationModal(true);
+      } else {
+        try {
+          await fetchPosts(
+            userDetails.location.latitude,
+            userDetails.location.longitude
+          );
+        } catch (error) {
+          console.error("Failed to fetch posts:", error);
+        }
       }
     };
 
@@ -126,19 +144,11 @@ export default function Home() {
       })}
     >
       <View style={tw`flex-row items-center mb-4`}>
-        {profilePicture ? (
-          <Avatar.Image
-            size={48}
-            source={avatarImages[profilePicture as keyof typeof avatarImages]}
-            style={tw`bg-[${theme.dark.background.border}]`}
-          />
-        ) : (
-          <Avatar.Image
-            size={48}
-            source={require("../public/avatars/default.png")}
-            style={tw`bg-[${theme.dark.background.border}]`}
-          />
-        )}
+        <Avatar.Image
+          size={48}
+          source={require("../public/default-user.png")}
+          style={tw`bg-[${theme.dark.background.border}]`}
+        />
         <View style={tw`ml-3 flex-1`}>
           <Text
             style={tw`text-[${theme.dark.text.primary}] font-medium text-base`}
@@ -305,12 +315,55 @@ export default function Home() {
     </Surface>
   );
 
-  const showCreatePostModal = () => {
-    setCreatePostModalVisible(true);
-  };
-
   const closeCreatePostModal = () => {
     setCreatePostModalVisible(false);
+  };
+
+  const handleUpdateLocation = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        setLocationError("Location permission denied");
+        return;
+      }
+
+      // Get current position with high accuracy
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+
+      // Use backend to get address details
+      const addressDetails = await fetchAddress(
+        location.coords.latitude,
+        location.coords.longitude
+      );
+
+      if (addressDetails) {
+        setLocationData({
+          ...addressDetails,
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        });
+      } else {
+        setLocationError("Could not get address details. Please try again.");
+      }
+    } catch (error) {
+      console.error("Location error:", error);
+      setLocationError("Failed to get location. Please try again.");
+    }
+  };
+
+  const handleSaveLocation = async () => {
+    if (!locationData) return;
+
+    const success = await updateUserDetails({
+      addressDetails: locationData,
+    });
+
+    if (success) {
+      setShowLocationModal(false);
+      await fetchPosts(locationData.latitude, locationData.longitude);
+    }
   };
 
   return (
@@ -363,6 +416,19 @@ export default function Home() {
       <PostModal
         visible={createPostModalVisible}
         onClose={closeCreatePostModal}
+      />
+
+      <UserModal
+        type="location"
+        show={showLocationModal}
+        loading={isLoading}
+        locationError={locationError}
+        onGetLocation={handleUpdateLocation}
+        onClose={() => setShowLocationModal(false)}
+        onSubmit={handleSaveLocation}
+        location={locationData || userData?.location}
+        setLocation={setLocationData}
+        fullScreen={true}
       />
     </View>
   );

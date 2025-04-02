@@ -1,9 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
-  KeyboardAvoidingView,
-  Platform,
-  TextInput as RNTextInput,
   Animated,
   Dimensions,
   TouchableWithoutFeedback,

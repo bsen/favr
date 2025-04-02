@@ -13,7 +13,7 @@ interface AddressDetails {
 }
 
 class LocationService {
-  async getLocationDetails(longitude: number, latitude: number) {
+  async getLocationDetailsFromCoordinates(longitude: number, latitude: number) {
     try {
       logger.info(`Fetching address details for ${longitude}, ${latitude}`);
       const address = await fetchAddress(longitude, latitude);

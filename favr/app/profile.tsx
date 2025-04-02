@@ -26,10 +26,7 @@ export default function Profile() {
   const {
     userData,
     isLoading,
-    error,
-    success,
-    updateName,
-    updateLocation,
+    updateUserDetails,
     fetchUserDetails,
     logout,
     clearMessages,
@@ -37,8 +34,6 @@ export default function Profile() {
   const [showNameModal, setShowNameModal] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [tempName, setTempName] = useState(userData?.name || "Guest");
-  const [showError, setShowError] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
   const [locationError, setLocationError] = useState<string>();
 
   useEffect(() => {
@@ -46,17 +41,14 @@ export default function Profile() {
     clearMessages?.();
   }, []);
 
-  useEffect(() => {
-    if (error) setShowError(true);
-    if (success) setShowSuccess(true);
-  }, [error, success]);
-
   const handleUpdateName = async () => {
-    const success = await updateName(tempName);
+    if (!tempName.trim()) {
+      setLocationError("Name cannot be empty");
+      return;
+    }
+    const success = await updateUserDetails({ name: tempName.trim() });
     if (success) {
-      setTimeout(() => {
-        setShowNameModal(false);
-      }, 3000);
+      setTempName("");
     }
   };
 
@@ -86,7 +78,9 @@ export default function Profile() {
           country: address[0].country || "",
         };
 
-        const success = await updateLocation(locationData);
+        const success = await updateUserDetails({
+          addressDetails: locationData,
+        });
         if (success) {
           setTimeout(() => {
             setShowLocationModal(false);

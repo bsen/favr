@@ -97,13 +97,7 @@ const getUserDetails = async (req: AuthRequest, res: Response) => {
 
 const updateUserDetails = async (req: AuthRequest, res: Response) => {
   try {
-    const { name } = req.body;
-
-    if (!name) {
-      logger.warn("Missing name in updateUser request");
-      res.status(400).json({ message: "Name is required" });
-      return;
-    }
+    const { name, bio, addressDetails } = req.body;
 
     if (!req.user) {
       logger.warn("User not found in request");
@@ -111,7 +105,11 @@ const updateUserDetails = async (req: AuthRequest, res: Response) => {
       return;
     }
 
-    const user = await userService.updateUserProfile(req.user.id, name);
+    const user = await userService.updateUserProfile(req.user.id, {
+      name,
+      bio,
+      addressDetails,
+    });
     logger.info(`User updated successfully: ${user.phone}`);
     res.status(200).json({
       user,
@@ -145,7 +143,7 @@ const fetchLocationAddress = async (req: AuthRequest, res: Response) => {
       return;
     }
 
-    const result = await locationService.getLocationDetails(
+    const result = await locationService.getLocationDetailsFromCoordinates(
       parseFloat(longitude),
       parseFloat(latitude)
     );
@@ -171,54 +169,10 @@ const fetchLocationAddress = async (req: AuthRequest, res: Response) => {
   }
 };
 
-const updateUserLocation = async (req: AuthRequest, res: Response) => {
-  try {
-    const { addressDetails } = req.body;
-
-    if (!addressDetails) {
-      logger.warn("Missing address details in updateUserLocation request");
-      res.status(400).json({ message: "Address details are required" });
-      return;
-    }
-
-    if (!req.user) {
-      logger.warn("User not found in request");
-      res.status(401).json({ message: "User not authenticated" });
-      return;
-    }
-
-    const result = await locationService.createOrUpdateLocation(
-      req.user.id,
-      addressDetails
-    );
-
-    if (!result.success) {
-      throw new Error(result.message);
-    }
-
-    logger.info(`Location updated successfully for user: ${req.user.id}`);
-    res.status(200).json({
-      location: result.data,
-      message: "Location updated successfully",
-    });
-  } catch (error) {
-    logger.error(
-      `Error in updateUserLocation controller: ${
-        error instanceof Error ? error.message : "Unknown error"
-      }`
-    );
-    res.status(400).json({
-      message:
-        error instanceof Error ? error.message : "Location update failed",
-    });
-  }
-};
-
 export default {
   sendOTP,
   verifyOTP,
   getUserDetails,
   updateUserDetails,
   fetchLocationAddress,
-  updateUserLocation,
 };

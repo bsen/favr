@@ -2,7 +2,8 @@ import User from "./user.schema.js";
 import jwt from "jsonwebtoken";
 import logger from "../../utils/logger.js";
 import Location from "../location/location.schema.js";
-import { avatars } from "../../utils/avatars.js";
+import locationService from "../location/location.service.js";
+import { generateUsername } from "unique-username-generator";
 
 class UserService {
   generateAuthToken(payload: { id: string; phone: string }): string {
@@ -21,11 +22,6 @@ class UserService {
     }
   }
 
-  selectRandomProfilePicture() {
-    const randomIndex = Math.floor(Math.random() * avatars.length);
-    return avatars[randomIndex];
-  }
-
   async createUserWithPhone(phone: string) {
     try {
       logger.info(`Checking for existing user with phone: ${phone}`);
@@ -35,11 +31,11 @@ class UserService {
         logger.info(`Existing user found with phone: ${phone}`);
         return existingUser;
       }
-
+      const name = generateUsername("-", 0, 16);
       logger.info(`Creating new user with phone: ${phone}`);
       return await User.create({
         phone,
-        profilePicture: this.selectRandomProfilePicture(),
+        name: name,
       });
     } catch (error) {
       logger.error(
@@ -95,7 +91,10 @@ class UserService {
     }
   }
 
-  async updateUserProfile(id: string, name: string) {
+  async updateUserProfile(
+    id: string,
+    updateData: { name?: string; bio?: string; addressDetails?: any }
+  ) {
     try {
       logger.info(`Updating user with ID: ${id}`);
       const user = await User.findByPk(id);
@@ -105,7 +104,19 @@ class UserService {
         throw new Error("User not found");
       }
 
-      await user.update({ name });
+      const updateFields: any = {};
+      if (updateData.name !== undefined) updateFields.name = updateData.name;
+      if (updateData.bio !== undefined) updateFields.bio = updateData.bio;
+
+      await user.update(updateFields);
+
+      if (updateData.addressDetails) {
+        await locationService.createOrUpdateLocation(
+          id,
+          updateData.addressDetails
+        );
+      }
+
       logger.info(`User updated successfully: ${user.phone}`);
       return user;
     } catch (error) {

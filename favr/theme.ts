@@ -20,7 +20,6 @@ export const theme = {
 
     brand: {
       primary: "#22c55e",
-      secondary: "#16a34a",
       danger: "#ef4444",
       success: {
         background: "rgba(22, 163, 74, 0.3)",

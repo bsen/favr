@@ -4,6 +4,7 @@ import sequelize from "../../config/database.js";
 class User extends Model {
   id!: string;
   name?: string;
+  bio?: string;
   profilePicture?: string;
   phone!: string;
   isActive!: boolean;
@@ -20,6 +21,10 @@ User.init(
       primaryKey: true,
     },
     name: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    bio: {
       type: DataTypes.STRING,
       allowNull: true,
     },

@@ -13,10 +13,5 @@ router.post(
   authMiddleware,
   userController.fetchLocationAddress
 );
-router.put(
-  "/update-location",
-  authMiddleware,
-  userController.updateUserLocation
-);
 
 export default router;
