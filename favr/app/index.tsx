@@ -10,7 +10,6 @@ import { usePost } from "./contexts/PostContext";
 import { useAuth } from "./contexts/AuthContext";
 import ReplyModal from "./components/ReplyModal";
 import PostModal from "./components/PostModal";
-import UserModal from "./components/UserModal";
 
 interface Post {
   id: number;
@@ -41,6 +40,8 @@ export default function Home() {
     updateUserDetails,
     fetchUserDetails,
     setUserData,
+    currentLocation,
+    getCurrentLocation,
   } = useAuth();
   const [replyModalVisible, setReplyModalVisible] = useState(false);
   const [createPostModalVisible, setCreatePostModalVisible] = useState(false);
@@ -62,24 +63,44 @@ export default function Home() {
       const userDetails = await fetchUserDetails();
       if (!userDetails || !userDetails.id) return;
 
-      if (
-        !userDetails.location ||
-        !userDetails.location.latitude ||
-        !userDetails.location.longitude
-      ) {
+      const location = await getCurrentLocation();
+      if (!location) {
         setIsInitializing(false);
-        setShowLocationModal(true);
         return;
       }
 
-      try {
-        await fetchPosts(
-          userDetails.location.latitude,
-          userDetails.location.longitude
-        );
-      } catch (error) {
-        console.error("Failed to fetch posts:", error);
+      if (!userDetails.location?.latitude || !userDetails.location?.longitude) {
+        try {
+          const address = await Location.reverseGeocodeAsync({
+            latitude: location.latitude,
+            longitude: location.longitude,
+          });
+
+          if (address[0]) {
+            const locationData = {
+              latitude: location.latitude,
+              longitude: location.longitude,
+              address: address[0].street || "",
+              city: address[0].city || "",
+              state: address[0].region || "",
+              postalCode: address[0].postalCode || "",
+              country: address[0].country || "",
+            };
+
+            await Promise.all([
+              updateUserDetails({
+                addressDetails: locationData,
+              }),
+              fetchPosts(location.latitude, location.longitude),
+            ]);
+          }
+        } catch (error) {
+          console.error("Error setting up location:", error);
+        }
+      } else {
+        await fetchPosts(location.latitude, location.longitude);
       }
+
       setIsInitializing(false);
     };
 
@@ -322,70 +343,49 @@ export default function Home() {
     setCreatePostModalVisible(false);
   };
 
-  const handleUpdateLocation = async () => {
-    try {
-      setLocationError(undefined);
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        setLocationError("Location permission denied");
-        return;
-      }
-
-      const location = await Location.getCurrentPositionAsync({});
-      const address = await Location.reverseGeocodeAsync({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-      });
-
-      if (address[0]) {
-        const locationData = {
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-          address: address[0].street || "",
-          city: address[0].city || "",
-          state: address[0].region || "",
-          postalCode: address[0].postalCode || "",
-          country: address[0].country || "",
-        };
-
-        const success = await updateUserDetails({
-          addressDetails: locationData,
-        });
-        if (success) {
-          setShowLocationModal(false);
-          await fetchPosts(locationData.latitude, locationData.longitude);
-          const updatedUser = await fetchUserDetails();
-          if (updatedUser) {
-            setUserData(updatedUser);
-          }
-        }
-      }
-    } catch (error) {
-      setLocationError("Failed to get location");
-      console.error("Error updating location:", error);
-    }
-  };
-
   const handleRefresh = async () => {
     try {
       const userDetails = await fetchUserDetails();
-      if (
-        !userDetails?.location?.latitude ||
-        !userDetails?.location?.longitude
-      ) {
-        setShowLocationModal(true);
-        return;
+      if (!userDetails) return;
+
+      const location = await getCurrentLocation();
+      if (!location) return;
+
+      if (!userDetails.location?.latitude || !userDetails.location?.longitude) {
+        try {
+          const address = await Location.reverseGeocodeAsync({
+            latitude: location.latitude,
+            longitude: location.longitude,
+          });
+
+          if (address[0]) {
+            const locationData = {
+              latitude: location.latitude,
+              longitude: location.longitude,
+              address: address[0].street || "",
+              city: address[0].city || "",
+              state: address[0].region || "",
+              postalCode: address[0].postalCode || "",
+              country: address[0].country || "",
+            };
+
+            await Promise.all([
+              updateUserDetails({
+                addressDetails: locationData,
+              }),
+              fetchPosts(location.latitude, location.longitude),
+            ]);
+          }
+        } catch (error) {
+          console.error("Error setting up location:", error);
+        }
+      } else {
+        await fetchPosts(location.latitude, location.longitude);
       }
-      await fetchPosts(
-        userDetails.location.latitude,
-        userDetails.location.longitude
-      );
     } catch (error) {
       console.error("Error refreshing data:", error);
     }
   };
-
-  const isLoading = isInitializing || userLoading || postsLoading;
 
   return (
     <View
@@ -405,11 +405,7 @@ export default function Home() {
         }
         showsVerticalScrollIndicator={false}
       >
-        {isLoading ? (
-          Array(3)
-            .fill(0)
-            .map((_, i) => <PostSkeleton key={i} />)
-        ) : !userData?.location?.latitude || !userData?.location?.longitude ? (
+        {isInitializing || userLoading || postsLoading ? (
           Array(3)
             .fill(0)
             .map((_, i) => <PostSkeleton key={i} />)
@@ -480,15 +476,17 @@ export default function Home() {
               <View style={tw`px-6 pb-16`}>
                 <Button
                   mode="contained"
-                  onPress={handleUpdateLocation}
-                  loading={isLoading}
+                  onPress={handleRefresh}
+                  loading={isInitializing}
                   style={tw.style(`rounded-xl`, {
                     backgroundColor: theme.dark.brand.primary,
                   })}
                   contentStyle={tw`py-1`}
                   labelStyle={tw`text-base font-medium`}
                 >
-                  {isLoading ? "Getting Location..." : "Use Current Location"}
+                  {isInitializing
+                    ? "Getting Location..."
+                    : "Use Current Location"}
                 </Button>
               </View>
             </Surface>

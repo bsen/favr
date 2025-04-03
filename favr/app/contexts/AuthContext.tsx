@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { API_BASE_URL } from "../../config";
+import * as Location from "expo-location";
 
 interface Location {
   latitude: number;
@@ -45,6 +46,11 @@ interface AuthContextType {
   locationError: string | undefined;
   setLocationError: (error: string | undefined) => void;
   setUserData: (data: UserData | null) => void;
+  currentLocation: { latitude: number; longitude: number } | null;
+  getCurrentLocation: () => Promise<{
+    latitude: number;
+    longitude: number;
+  } | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -57,6 +63,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [locationError, setLocationError] = useState<string | undefined>();
+  const [currentLocation, setCurrentLocation] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
 
   const sendOtp = async (phoneNumber: string) => {
     setError("");
@@ -245,6 +255,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setError(null);
   };
 
+  const getCurrentLocation = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        setLocationError("Location permission denied");
+        return null;
+      }
+
+      const location = await Location.getCurrentPositionAsync({});
+      const newLocation = {
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      };
+      setCurrentLocation(newLocation);
+      return newLocation;
+    } catch (error) {
+      console.error("Error getting current location:", error);
+      return null;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -265,6 +296,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         locationError,
         setLocationError,
         setUserData,
+        currentLocation,
+        getCurrentLocation,
       }}
     >
       {children}
