@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, ScrollView, RefreshControl } from "react-native";
+import { View, ScrollView, RefreshControl, Modal } from "react-native";
 import { Text, Surface, Avatar, Button } from "react-native-paper";
 import { router } from "expo-router";
 import tw from "twrnc";
@@ -26,18 +26,21 @@ interface Post {
 }
 
 export default function Home() {
-  const { posts, loading, refreshing, fetchPosts, refreshPosts, createReply } =
-    usePost();
+  const {
+    posts,
+    loading: postsLoading,
+    refreshing,
+    fetchPosts,
+    createReply,
+  } = usePost();
   const {
     userData,
-    showLocationModal,
-    setShowLocationModal,
-    isLoading,
+    isLoading: userLoading,
     locationError,
     setLocationError,
     updateUserDetails,
-    fetchAddress,
     fetchUserDetails,
+    setUserData,
   } = useAuth();
   const [replyModalVisible, setReplyModalVisible] = useState(false);
   const [createPostModalVisible, setCreatePostModalVisible] = useState(false);
@@ -45,15 +48,8 @@ export default function Home() {
   const [replyPrice, setReplyPrice] = useState("");
   const [replyDescription, setReplyDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [locationData, setLocationData] = useState<{
-    address: string;
-    city: string;
-    state: string;
-    postalCode: string;
-    country: string;
-    latitude: number;
-    longitude: number;
-  } | null>(null);
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
     const initialize = async () => {
@@ -66,18 +62,25 @@ export default function Home() {
       const userDetails = await fetchUserDetails();
       if (!userDetails || !userDetails.id) return;
 
-      if (!userDetails.location?.latitude || !userDetails.location?.longitude) {
+      if (
+        !userDetails.location ||
+        !userDetails.location.latitude ||
+        !userDetails.location.longitude
+      ) {
+        setIsInitializing(false);
         setShowLocationModal(true);
-      } else {
-        try {
-          await fetchPosts(
-            userDetails.location.latitude,
-            userDetails.location.longitude
-          );
-        } catch (error) {
-          console.error("Failed to fetch posts:", error);
-        }
+        return;
       }
+
+      try {
+        await fetchPosts(
+          userDetails.location.latitude,
+          userDetails.location.longitude
+        );
+      } catch (error) {
+        console.error("Failed to fetch posts:", error);
+      }
+      setIsInitializing(false);
     };
 
     initialize();
@@ -321,50 +324,68 @@ export default function Home() {
 
   const handleUpdateLocation = async () => {
     try {
+      setLocationError(undefined);
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
         setLocationError("Location permission denied");
         return;
       }
 
-      // Get current position with high accuracy
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
+      const location = await Location.getCurrentPositionAsync({});
+      const address = await Location.reverseGeocodeAsync({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
       });
 
-      // Use backend to get address details
-      const addressDetails = await fetchAddress(
-        location.coords.latitude,
-        location.coords.longitude
-      );
-
-      if (addressDetails) {
-        setLocationData({
-          ...addressDetails,
+      if (address[0]) {
+        const locationData = {
           latitude: location.coords.latitude,
           longitude: location.coords.longitude,
+          address: address[0].street || "",
+          city: address[0].city || "",
+          state: address[0].region || "",
+          postalCode: address[0].postalCode || "",
+          country: address[0].country || "",
+        };
+
+        const success = await updateUserDetails({
+          addressDetails: locationData,
         });
-      } else {
-        setLocationError("Could not get address details. Please try again.");
+        if (success) {
+          setShowLocationModal(false);
+          await fetchPosts(locationData.latitude, locationData.longitude);
+          const updatedUser = await fetchUserDetails();
+          if (updatedUser) {
+            setUserData(updatedUser);
+          }
+        }
       }
     } catch (error) {
-      console.error("Location error:", error);
-      setLocationError("Failed to get location. Please try again.");
+      setLocationError("Failed to get location");
+      console.error("Error updating location:", error);
     }
   };
 
-  const handleSaveLocation = async () => {
-    if (!locationData) return;
-
-    const success = await updateUserDetails({
-      addressDetails: locationData,
-    });
-
-    if (success) {
-      setShowLocationModal(false);
-      await fetchPosts(locationData.latitude, locationData.longitude);
+  const handleRefresh = async () => {
+    try {
+      const userDetails = await fetchUserDetails();
+      if (
+        !userDetails?.location?.latitude ||
+        !userDetails?.location?.longitude
+      ) {
+        setShowLocationModal(true);
+        return;
+      }
+      await fetchPosts(
+        userDetails.location.latitude,
+        userDetails.location.longitude
+      );
+    } catch (error) {
+      console.error("Error refreshing data:", error);
     }
   };
+
+  const isLoading = isInitializing || userLoading || postsLoading;
 
   return (
     <View
@@ -378,13 +399,17 @@ export default function Home() {
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={refreshPosts}
+            onRefresh={handleRefresh}
             tintColor={theme.dark.brand.primary}
           />
         }
         showsVerticalScrollIndicator={false}
       >
-        {loading ? (
+        {isLoading ? (
+          Array(3)
+            .fill(0)
+            .map((_, i) => <PostSkeleton key={i} />)
+        ) : !userData?.location?.latitude || !userData?.location?.longitude ? (
           Array(3)
             .fill(0)
             .map((_, i) => <PostSkeleton key={i} />)
@@ -418,18 +443,58 @@ export default function Home() {
         onClose={closeCreatePostModal}
       />
 
-      <UserModal
-        type="location"
-        show={showLocationModal}
-        loading={isLoading}
-        locationError={locationError}
-        onGetLocation={handleUpdateLocation}
-        onClose={() => setShowLocationModal(false)}
-        onSubmit={handleSaveLocation}
-        location={locationData || userData?.location}
-        setLocation={setLocationData}
-        fullScreen={true}
-      />
+      <Modal
+        visible={showLocationModal}
+        transparent={true}
+        animationType="slide"
+      >
+        <View style={tw`flex-1 bg-[${theme.dark.background.primary}]`}>
+          <View style={tw`flex-1 justify-end`}>
+            <Surface
+              style={tw.style(`rounded-t-3xl`, {
+                backgroundColor: theme.dark.background.secondary,
+                borderTopWidth: 1,
+                borderColor: theme.dark.background.border,
+                ...commonStyles.glass,
+              })}
+            >
+              <View style={tw`p-6`}>
+                <Text
+                  style={tw`text-[${theme.dark.text.primary}] text-2xl font-bold mb-4`}
+                >
+                  Enable Location
+                </Text>
+                <Text
+                  style={tw`text-[${theme.dark.text.secondary}] text-base mb-4`}
+                >
+                  We need your location to show you nearby posts and help you
+                  connect with others in your area.
+                </Text>
+                {locationError && (
+                  <Text style={tw`text-[${theme.dark.brand.error.text}] mb-4`}>
+                    {locationError}
+                  </Text>
+                )}
+              </View>
+
+              <View style={tw`px-6 pb-16`}>
+                <Button
+                  mode="contained"
+                  onPress={handleUpdateLocation}
+                  loading={isLoading}
+                  style={tw.style(`rounded-xl`, {
+                    backgroundColor: theme.dark.brand.primary,
+                  })}
+                  contentStyle={tw`py-1`}
+                  labelStyle={tw`text-base font-medium`}
+                >
+                  {isLoading ? "Getting Location..." : "Use Current Location"}
+                </Button>
+              </View>
+            </Surface>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
