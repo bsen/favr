@@ -1,6 +1,6 @@
 import express from "express";
-import replyController from "./reply.controller.js";
-import authMiddleware from "../../middleware/auth.middleware.js";
+import replyController from "./reply.controller";
+import authMiddleware from "../../middleware/auth.middleware";
 
 const router = express.Router();
 

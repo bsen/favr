@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
-import replyService from "../../models/reply/reply.service.js";
-import logger from "../../utils/logger.js";
-import User from "../../models/user/user.schema.js";
+import replyService from "../../models/reply/reply.service";
+import logger from "../../utils/logger";
+import User from "../../models/user/user.schema";
 
 interface AuthRequest extends Request {
   user?: User;

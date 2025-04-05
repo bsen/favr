@@ -1,9 +1,8 @@
 import { Request, Response } from "express";
-import userService from "../../models/user/user.service.js";
-import otpService from "../../models/otp/otp.service.js";
-import logger from "../../utils/logger.js";
-import User from "../../models/user/user.schema.js";
-import locationService from "../../models/location/location.service.js";
+import userService from "../../models/user/user.service";
+import otpService from "../../models/otp/otp.service";
+import logger from "../../utils/logger";
+import User from "../../models/user/user.schema";
 
 interface AuthRequest extends Request {
   user?: User;
@@ -143,7 +142,7 @@ const fetchLocationAddress = async (req: AuthRequest, res: Response) => {
       return;
     }
 
-    const result = await locationService.getLocationDetailsFromCoordinates(
+    const result = await userService.getLocationDetailsFromCoordinates(
       parseFloat(longitude),
       parseFloat(latitude)
     );

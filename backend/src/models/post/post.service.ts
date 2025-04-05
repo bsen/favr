@@ -1,7 +1,7 @@
-import Post from "./post.schema.js";
-import Location from "../location/location.schema.js";
-import logger from "../../utils/logger.js";
-import sequelize from "../../config/database.js";
+import Post from "./post.schema";
+import User from "../user/user.schema";
+import logger from "../../utils/logger";
+import { Op } from "sequelize";
 
 interface PostData {
   title: string;
@@ -10,8 +10,14 @@ interface PostData {
   userId: string;
   price?: number;
   type?: string;
+  latitude: number;
+  longitude: number;
+  address?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  country?: string;
 }
-
 
 class PostService {
   async createPost({
@@ -21,27 +27,31 @@ class PostService {
     userId,
     price,
     type = "offer",
+    latitude,
+    longitude,
+    address,
+    city,
+    state,
+    postalCode,
+    country,
   }: PostData) {
     try {
       logger.info(`Creating new post for user: ${userId}`);
-      const location = await Location.findOne({
-        where: { userId },
-        attributes: ["id"],
-      });
-
-      if (!location) {
-        logger.warn(`Location not found for user: ${userId}`);
-        throw new Error("Location not found");
-      }
 
       const post = await Post.create({
         title,
         description,
         imageUrls,
         userId,
-        locationId: location.id,
         price,
         type,
+        latitude,
+        longitude,
+        address,
+        city,
+        state,
+        postalCode,
+        country,
       });
 
       logger.info(`Post created successfully with ID: ${post.id}`);
@@ -69,6 +79,13 @@ class PostService {
           "imageUrls",
           "status",
           "type",
+          "latitude",
+          "longitude",
+          "address",
+          "city",
+          "state",
+          "postalCode",
+          "country",
           "createdAt",
           "updatedAt",
         ],
@@ -98,45 +115,53 @@ class PostService {
 
       const offset = (page - 1) * limit;
 
-      const [posts, totalCount] = (await Promise.all([
-        sequelize.query(`
-          WITH posts_with_distance AS (
-            SELECT 
-              p.id, p.title, p.description, p.price, p."imageUrls", 
-              p.status, p.type, p."createdAt", p."updatedAt",
-              l.id as "locationId", l.latitude, l.longitude,
-              l.address, l.city, l.state, l."postalCode", l.country,
-              u.id as "userId", u.name as "userName", u."profilePicture",
-              (6371 * acos(cos(radians(${latitude})) * cos(radians(l.latitude)) * 
-              cos(radians(l.longitude) - radians(${longitude})) + 
-              sin(radians(${latitude})) * sin(radians(l.latitude)))) AS distance
-            FROM "Posts" p
-            JOIN "Locations" l ON p."locationId" = l.id
-            JOIN "Users" u ON p."userId" = u.id
-            WHERE p.status = 'active'
-          )
-          SELECT * FROM posts_with_distance
-          WHERE distance <= ${radius}
-          ORDER BY distance
-          LIMIT ${limit} OFFSET ${offset}
-        `),
-        sequelize.query(`
-          SELECT COUNT(*) as total
-          FROM "Posts" p
-          JOIN "Locations" l ON p."locationId" = l.id
-          WHERE p.status = 'active'
-          AND (6371 * acos(cos(radians(${latitude})) * cos(radians(l.latitude)) * 
-          cos(radians(l.longitude) - radians(${longitude})) + 
-          sin(radians(${latitude})) * sin(radians(l.latitude)))) <= ${radius}
-        `),
-      ])) as unknown as [any[], [{ total: string }]];
+      const latRange = radius / 111.32;
+      const longRange =
+        radius / (111.32 * Math.cos((latitude * Math.PI) / 180));
 
-      const total = parseInt(totalCount[0].total);
+      const { count, rows: posts } = await Post.findAndCountAll({
+        where: {
+          status: "active",
+          latitude: {
+            [Op.between]: [latitude - latRange, latitude + latRange],
+          },
+          longitude: {
+            [Op.between]: [longitude - longRange, longitude + longRange],
+          },
+        },
+        include: [
+          {
+            model: User,
+            attributes: ["id", "name", "profilePicture"],
+            as: "user",
+          },
+        ],
+        limit,
+        offset,
+        order: [["createdAt", "DESC"]],
+      });
+
+      const postsWithDistance = posts
+        .map((post) => {
+          const distance = this.calculateDistance(
+            latitude,
+            longitude,
+            post.latitude,
+            post.longitude
+          );
+          return {
+            ...post.toJSON(),
+            distance,
+          };
+        })
+        .filter((post) => post.distance <= radius)
+        .sort((a, b) => a.distance - b.distance);
+
       return {
-        posts: posts[0],
-        totalCount: total,
+        posts: postsWithDistance,
+        totalCount: count,
         currentPage: page,
-        hasMore: offset + limit < total,
+        hasMore: offset + limit < count,
       };
     } catch (error) {
       logger.error(
@@ -146,6 +171,29 @@ class PostService {
       );
       throw new Error("Failed to fetch nearby posts");
     }
+  }
+
+  private calculateDistance(
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number
+  ): number {
+    const R = 6371;
+    const dLat = this.toRad(lat2 - lat1);
+    const dLon = this.toRad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(this.toRad(lat1)) *
+        Math.cos(this.toRad(lat2)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }
+
+  private toRad(value: number): number {
+    return (value * Math.PI) / 180;
   }
 
   async updatePostStatus(id: string, userId: string, status: string) {

@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
-import postService from "../../models/post/post.service.js";
-import logger from "../../utils/logger.js";
-import User from "../../models/user/user.schema.js";
+import postService from "../../models/post/post.service";
+import logger from "../../utils/logger";
+import User from "../../models/user/user.schema";
 
 interface AuthRequest extends Request {
   user?: User;
@@ -30,6 +30,8 @@ const createPost = async (req: AuthRequest, res: Response) => {
       price,
       type,
       userId: req.user.id,
+      latitude: parseFloat(req.body.latitude),
+      longitude: parseFloat(req.body.longitude),
     });
 
     res.status(201).json({

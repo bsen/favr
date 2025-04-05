@@ -1,11 +1,11 @@
 import express, { Express } from "express";
 import dotenv from "dotenv";
 import cors from "cors";
-import modules from "./models/index.js";
-import userRoutes from "./routes/user/user.routes.js";
-import postRoutes from "./routes/post/post.routes.js";
-import replyRoutes from "./routes/reply/reply.routes.js";
-import logger from "./utils/logger.js";
+import modules from "./models/index";
+import userRoutes from "./routes/user/user.routes";
+import postRoutes from "./routes/post/post.routes";
+import replyRoutes from "./routes/reply/reply.routes";
+import logger from "./utils/logger";
 
 dotenv.config();
 
@@ -25,8 +25,10 @@ app.use("/api/v1/reply", replyRoutes);
 
 const start = async () => {
   try {
+    console.log("Attempting to connect to database...");
     await modules.sequelize.authenticate();
     logger.info("Database connected.");
+    console.log("Attempting to sync database...");
     await modules.sequelize.sync({ alter: true });
     logger.info("Database synced.");
 
@@ -34,9 +36,10 @@ const start = async () => {
       logger.info(`http://localhost:${port}`);
     });
   } catch (error) {
+    console.error("Full error object:", error);
     logger.error(
       `Failed to start server: ${
-        error instanceof Error ? error.message : "Unknown error"
+        error instanceof Error ? error.message : JSON.stringify(error)
       }`
     );
     process.exit(1);

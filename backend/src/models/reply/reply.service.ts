@@ -1,8 +1,7 @@
-import Reply from "./reply.schema.js";
-import Post from "../post/post.schema.js";
-import User from "../user/user.schema.js";
-import logger from "../../utils/logger.js";
-import sequelize from "../../config/database.js";
+import Reply from "./reply.schema";
+import Post from "../post/post.schema";
+import User from "../user/user.schema";
+import logger from "../../utils/logger";
 import { Op } from "sequelize";
 
 interface ReplyData {

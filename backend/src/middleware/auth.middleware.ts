@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import logger from "../utils/logger.js";
-import User from "../models/user/user.schema.js";
+import logger from "../utils/logger";
+import User from "../models/user/user.schema";
 
 interface AuthRequest extends Request {
   user?: User;

@@ -1,6 +1,6 @@
-import OTP from "./otp.schema.js";
-import sendOTP from "../../services/twilio.js";
-import logger from "../../utils/logger.js";
+import OTP from "./otp.schema";
+import sendOTP from "../../services/twilio";
+import logger from "../../utils/logger";
 
 class OTPService {
   generateOTP(): string {

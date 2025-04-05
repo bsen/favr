@@ -1,5 +1,5 @@
 import { Model, DataTypes } from "sequelize";
-import sequelize from "../../config/database.js";
+import sequelize from "../../config/database";
 
 enum PostType {
   Request = "request",
@@ -20,7 +20,13 @@ class Post extends Model {
   price?: number;
   imageUrls?: string[];
   userId!: string;
-  locationId!: string;
+  latitude!: number;
+  longitude!: number;
+  address?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  country?: string;
   status!: PostStatus;
   type!: PostType;
   createdAt!: Date;
@@ -55,13 +61,33 @@ Post.init(
         key: "id",
       },
     },
-    locationId: {
-      type: DataTypes.UUID,
+    latitude: {
+      type: DataTypes.DECIMAL(10, 8),
       allowNull: false,
-      references: {
-        model: "Locations",
-        key: "id",
-      },
+    },
+    longitude: {
+      type: DataTypes.DECIMAL(11, 8),
+      allowNull: false,
+    },
+    address: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    city: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+    },
+    state: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+    },
+    postalCode: {
+      type: DataTypes.STRING(20),
+      allowNull: true,
+    },
+    country: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
     },
     status: {
       type: DataTypes.ENUM("active", "cancelled", "completed"),
@@ -83,7 +109,10 @@ Post.init(
         fields: ["userId"],
       },
       {
-        fields: ["locationId", "type"],
+        fields: ["latitude", "longitude"],
+      },
+      {
+        fields: ["type"],
       },
     ],
   }
