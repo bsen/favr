@@ -45,42 +45,6 @@ const ProfileSkeleton = () => (
           />
         </View>
       </View>
-
-      <View
-        style={tw`px-6 py-4 border-t border-[${theme.dark.background.border}]`}
-      >
-        <View style={tw`flex-row items-center justify-between mb-2`}>
-          <View style={tw`flex-row items-center`}>
-            <View
-              style={tw.style(`w-6 h-6 rounded-full mr-2`, {
-                backgroundColor: `${theme.dark.background.tertiary}80`,
-              })}
-            />
-            <View
-              style={tw.style(`w-28 h-5 rounded`, {
-                backgroundColor: `${theme.dark.background.tertiary}80`,
-              })}
-            />
-          </View>
-        </View>
-        <View style={tw`ml-9`}>
-          <View
-            style={tw.style(`w-48 h-4 rounded mb-2`, {
-              backgroundColor: `${theme.dark.background.tertiary}80`,
-            })}
-          />
-          <View
-            style={tw.style(`w-40 h-4 rounded mb-2`, {
-              backgroundColor: `${theme.dark.background.tertiary}80`,
-            })}
-          />
-          <View
-            style={tw.style(`w-32 h-4 rounded`, {
-              backgroundColor: `${theme.dark.background.tertiary}80`,
-            })}
-          />
-        </View>
-      </View>
     </Surface>
 
     <Surface
@@ -165,7 +129,7 @@ export default function Profile() {
               <View style={tw`p-6 flex-row items-center`}>
                 <Avatar.Text
                   size={70}
-                  label={(userData?.name || "Guest")
+                  label={(userData?.firstName || "Guest")
                     .split(" ")
                     .map((n) => n[0])
                     .join("")}
@@ -175,60 +139,12 @@ export default function Profile() {
                   <Text
                     style={tw`text-[${theme.dark.text.primary}] text-xl font-semibold mb-1`}
                   >
-                    {userData?.name || "Guest"}
+                    {userData?.firstName || "Guest"}
                   </Text>
                   <Text style={tw`text-[${theme.dark.text.secondary}]`}>
                     {userData?.phone || "No phone number"}
                   </Text>
                 </View>
-              </View>
-
-              <View
-                style={tw`px-6 py-4 border-t border-[${theme.dark.background.border}]`}
-              >
-                <View style={tw`flex-row items-center justify-between mb-2`}>
-                  <View style={tw`flex-row items-center`}>
-                    <IconButton
-                      icon="map-marker"
-                      size={22}
-                      iconColor={theme.dark.brand.primary}
-                      style={tw`m-0 p-0 mr-2`}
-                    />
-                    <Text
-                      style={tw`text-[${theme.dark.text.primary}] font-medium`}
-                    >
-                      {userData?.location ? "Current Location" : "No Location"}
-                    </Text>
-                  </View>
-                </View>
-                {userData?.location ? (
-                  <View style={tw`ml-9`}>
-                    <Text
-                      style={tw`text-[${theme.dark.text.secondary}] mb-1 leading-5 text-sm`}
-                    >
-                      {userData.location.address}
-                    </Text>
-                    <Text
-                      style={tw`text-[${theme.dark.text.secondary}] mb-1 leading-5 text-sm`}
-                    >
-                      {userData.location.city}, {userData.location.state}{" "}
-                      {userData.location.postalCode}
-                    </Text>
-                    <Text
-                      style={tw`text-[${theme.dark.text.secondary}] leading-5 text-sm`}
-                    >
-                      {userData.location.country}
-                    </Text>
-                  </View>
-                ) : (
-                  <View style={tw`ml-9`}>
-                    <Text
-                      style={tw`text-[${theme.dark.text.secondary}] text-sm`}
-                    >
-                      No location set
-                    </Text>
-                  </View>
-                )}
               </View>
             </Surface>
 

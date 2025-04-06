@@ -16,11 +16,25 @@ interface Post {
   profilePicture?: string;
 }
 
+export type PostCategory =
+  | "academic"
+  | "clothing"
+  | "travel"
+  | "courier"
+  | "furniture"
+  | "electronics"
+  | "food"
+  | "other";
+
 interface CreatePostData {
   title: string;
   description: string;
   price: number;
   type: "offer" | "request";
+  latitude: number;
+  longitude: number;
+  address: string;
+  category: PostCategory;
 }
 
 interface CreateReplyData {
@@ -130,10 +144,18 @@ export const PostProvider = ({ children }: { children: React.ReactNode }) => {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          ...data,
+          latitude: data.latitude,
+          longitude: data.longitude,
+          address: data.address,
+        }),
       });
 
-      if (!response.ok) throw new Error("Failed to create post");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to create post");
+      }
 
       if (lastLocation) {
         await fetchPosts(lastLocation.lat, lastLocation.lng);

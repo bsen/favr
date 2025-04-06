@@ -25,7 +25,7 @@ class Post extends Model {
   address?: string;
   status!: PostStatus;
   type!: PostType;
-  category!: string;
+  category?: string;
   createdAt!: Date;
   updatedAt!: Date;
 }
