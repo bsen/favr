@@ -8,10 +8,5 @@ router.post("/send-otp", userController.sendOTP);
 router.post("/verify-otp", userController.verifyOTP);
 router.get("/details", authMiddleware, userController.getUserDetails);
 router.put("/update-details", authMiddleware, userController.updateUserDetails);
-router.post(
-  "/fetch-address",
-  authMiddleware,
-  userController.fetchLocationAddress
-);
 
 export default router;

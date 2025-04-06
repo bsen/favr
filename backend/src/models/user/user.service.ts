@@ -1,17 +1,6 @@
 import User from "./user.schema";
 import jwt from "jsonwebtoken";
 import logger from "../../utils/logger";
-import fetchAddress from "../../services/mapbox";
-
-interface AddressDetails {
-  longitude: string;
-  latitude: string;
-  address: string;
-  city: string;
-  state: string;
-  postalCode: string;
-  country: string;
-}
 
 class UserService {
   generateAuthToken(payload: { id: string; phone: string }): string {
@@ -59,15 +48,10 @@ class UserService {
         attributes: [
           "id",
           "phone",
-          "name",
+          "firstName",
+          "birthDate",
+          "gender",
           "profilePicture",
-          "latitude",
-          "longitude",
-          "address",
-          "city",
-          "state",
-          "postalCode",
-          "country",
           "createdAt",
           "updatedAt",
         ],
@@ -88,64 +72,14 @@ class UserService {
     }
   }
 
-  async getLocationDetailsFromCoordinates(longitude: number, latitude: number) {
-    try {
-      logger.info(`Fetching address details for ${longitude}, ${latitude}`);
-      const address = await fetchAddress(longitude, latitude);
-      const addressFeatures = address.features;
-
-      let addressDetails = {
-        longitude,
-        latitude,
-        address: "",
-        city: "",
-        state: "",
-        postalCode: "",
-        country: "",
-      };
-
-      for (const feature of addressFeatures) {
-        switch (feature.place_type[0]) {
-          case "address":
-            addressDetails.address = feature.text;
-            break;
-          case "place":
-            addressDetails.city = feature.text;
-            break;
-          case "region":
-            addressDetails.state = feature.text;
-            break;
-          case "postcode":
-            addressDetails.postalCode = feature.text;
-            break;
-          case "country":
-            addressDetails.country = feature.text;
-            break;
-        }
-      }
-
-      return {
-        success: true,
-        data: addressDetails,
-        message: "Address details fetched successfully",
-      };
-    } catch (error) {
-      logger.error(
-        `Error fetching address details: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
-      return {
-        success: false,
-        message: "Failed to fetch address details",
-        error: error instanceof Error ? error.message : "Unknown error",
-      };
-    }
-  }
-
   async updateUserProfile(
     id: string,
-    updateData: { name?: string; bio?: string; addressDetails?: AddressDetails }
+    updateData: {
+      firstName?: string;
+      birthDate?: Date;
+      gender?: string;
+      profilePicture?: string;
+    }
   ) {
     try {
       logger.info(`Updating user with ID: ${id}`);
@@ -157,17 +91,14 @@ class UserService {
       }
 
       const updateFields: any = {};
-      if (updateData.name !== undefined) updateFields.name = updateData.name;
-      if (updateData.bio !== undefined) updateFields.bio = updateData.bio;
-      if (updateData.addressDetails) {
-        updateFields.latitude = updateData.addressDetails.latitude;
-        updateFields.longitude = updateData.addressDetails.longitude;
-        updateFields.address = updateData.addressDetails.address;
-        updateFields.city = updateData.addressDetails.city;
-        updateFields.state = updateData.addressDetails.state;
-        updateFields.postalCode = updateData.addressDetails.postalCode;
-        updateFields.country = updateData.addressDetails.country;
-      }
+      if (updateData.firstName !== undefined)
+        updateFields.firstName = updateData.firstName;
+      if (updateData.birthDate !== undefined)
+        updateFields.birthDate = updateData.birthDate;
+      if (updateData.gender !== undefined)
+        updateFields.gender = updateData.gender;
+      if (updateData.profilePicture !== undefined)
+        updateFields.profilePicture = updateData.profilePicture;
 
       await user.update(updateFields);
 

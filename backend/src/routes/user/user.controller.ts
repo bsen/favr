@@ -96,7 +96,7 @@ const getUserDetails = async (req: AuthRequest, res: Response) => {
 
 const updateUserDetails = async (req: AuthRequest, res: Response) => {
   try {
-    const { name, bio, addressDetails } = req.body;
+    const { firstName, birthDate, gender, profilePicture } = req.body;
 
     if (!req.user) {
       logger.warn("User not found in request");
@@ -105,9 +105,10 @@ const updateUserDetails = async (req: AuthRequest, res: Response) => {
     }
 
     const user = await userService.updateUserProfile(req.user.id, {
-      name,
-      bio,
-      addressDetails,
+      firstName,
+      birthDate,
+      gender,
+      profilePicture,
     });
     logger.info(`User updated successfully: ${user.phone}`);
     res.status(200).json({
@@ -126,52 +127,9 @@ const updateUserDetails = async (req: AuthRequest, res: Response) => {
   }
 };
 
-const fetchLocationAddress = async (req: AuthRequest, res: Response) => {
-  try {
-    const { longitude, latitude } = req.body;
-
-    if (!longitude || !latitude) {
-      logger.warn("Missing coordinates in fetchLocationAddress request");
-      res.status(400).json({ message: "Longitude and latitude are required" });
-      return;
-    }
-
-    if (!req.user) {
-      logger.warn("User not found in request");
-      res.status(401).json({ message: "User not authenticated" });
-      return;
-    }
-
-    const result = await userService.getLocationDetailsFromCoordinates(
-      parseFloat(longitude),
-      parseFloat(latitude)
-    );
-
-    if (!result.success) {
-      throw new Error(result.message);
-    }
-
-    res.status(200).json({
-      addressDetails: result.data,
-      message: "Address fetched successfully for validation",
-    });
-  } catch (error) {
-    logger.error(
-      `Error in fetchLocationAddress controller: ${
-        error instanceof Error ? error.message : "Unknown error"
-      }`
-    );
-    res.status(400).json({
-      message:
-        error instanceof Error ? error.message : "Failed to fetch address",
-    });
-  }
-};
-
 export default {
   sendOTP,
   verifyOTP,
   getUserDetails,
   updateUserDetails,
-  fetchLocationAddress,
 };

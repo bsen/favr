@@ -23,10 +23,6 @@ class Post extends Model {
   latitude!: number;
   longitude!: number;
   address?: string;
-  city?: string;
-  state?: string;
-  postalCode?: string;
-  country?: string;
   status!: PostStatus;
   type!: PostType;
   category!: string;
@@ -72,22 +68,6 @@ Post.init(
     },
     address: {
       type: DataTypes.TEXT,
-      allowNull: true,
-    },
-    city: {
-      type: DataTypes.STRING(100),
-      allowNull: true,
-    },
-    state: {
-      type: DataTypes.STRING(100),
-      allowNull: true,
-    },
-    postalCode: {
-      type: DataTypes.STRING(20),
-      allowNull: true,
-    },
-    country: {
-      type: DataTypes.STRING(100),
       allowNull: true,
     },
     status: {

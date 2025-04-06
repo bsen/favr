@@ -13,14 +13,16 @@ interface PostData {
   latitude: number;
   longitude: number;
   address?: string;
-  city?: string;
-  state?: string;
-  postalCode?: string;
-  country?: string;
   category?: string;
 }
 
 class PostService {
+  private validateCoordinates(latitude: number, longitude: number): boolean {
+    return (
+      latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180
+    );
+  }
+
   async createPost({
     title,
     description,
@@ -31,14 +33,17 @@ class PostService {
     latitude,
     longitude,
     address,
-    city,
-    state,
-    postalCode,
-    country,
     category,
   }: PostData) {
     try {
-      logger.info(`Creating new post for user: ${userId}`);
+      logger.info(
+        `Creating new post for user: ${userId} at coordinates: ${latitude}, ${longitude}`
+      );
+
+      if (!this.validateCoordinates(latitude, longitude)) {
+        logger.warn(`Invalid coordinates provided: ${latitude}, ${longitude}`);
+        throw new Error("Invalid coordinates provided");
+      }
 
       const post = await Post.create({
         title,
@@ -50,14 +55,12 @@ class PostService {
         latitude,
         longitude,
         address,
-        city,
-        state,
-        postalCode,
-        country,
         category,
       });
 
-      logger.info(`Post created successfully with ID: ${post.id}`);
+      logger.info(
+        `Post created successfully with ID: ${post.id} at coordinates: ${latitude}, ${longitude}`
+      );
       return post;
     } catch (error) {
       logger.error(
@@ -85,10 +88,6 @@ class PostService {
           "latitude",
           "longitude",
           "address",
-          "city",
-          "state",
-          "postalCode",
-          "country",
           "category",
           "createdAt",
           "updatedAt",
@@ -136,7 +135,7 @@ class PostService {
         include: [
           {
             model: User,
-            attributes: ["id", "name", "profilePicture"],
+            attributes: ["id", "firstName", "profilePicture"],
             as: "user",
           },
         ],
