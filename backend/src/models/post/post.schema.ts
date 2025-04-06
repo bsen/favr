@@ -29,6 +29,7 @@ class Post extends Model {
   country?: string;
   status!: PostStatus;
   type!: PostType;
+  category!: string;
   createdAt!: Date;
   updatedAt!: Date;
 }
@@ -95,7 +96,20 @@ Post.init(
       defaultValue: "active",
     },
     type: {
-      type: DataTypes.ENUM("request", "offer", "announcement"),
+      type: DataTypes.ENUM("request", "offer"),
+      allowNull: false,
+    },
+    category: {
+      type: DataTypes.ENUM(
+        "academic",
+        "clothing",
+        "travel",
+        "courier",
+        "furniture",
+        "electronics",
+        "food",
+        "other"
+      ),
       allowNull: false,
     },
   },

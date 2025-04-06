@@ -9,7 +9,7 @@ interface AuthRequest extends Request {
 
 const createPost = async (req: AuthRequest, res: Response) => {
   try {
-    const { title, description, imageUrls, price, type } = req.body;
+    const { title, description, imageUrls, price, type, category } = req.body;
 
     if (!title) {
       logger.warn("Missing title in createPost request");
@@ -32,6 +32,7 @@ const createPost = async (req: AuthRequest, res: Response) => {
       userId: req.user.id,
       latitude: parseFloat(req.body.latitude),
       longitude: parseFloat(req.body.longitude),
+      category,
     });
 
     res.status(201).json({

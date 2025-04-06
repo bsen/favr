@@ -17,6 +17,7 @@ interface PostData {
   state?: string;
   postalCode?: string;
   country?: string;
+  category?: string;
 }
 
 class PostService {
@@ -34,6 +35,7 @@ class PostService {
     state,
     postalCode,
     country,
+    category,
   }: PostData) {
     try {
       logger.info(`Creating new post for user: ${userId}`);
@@ -52,6 +54,7 @@ class PostService {
         state,
         postalCode,
         country,
+        category,
       });
 
       logger.info(`Post created successfully with ID: ${post.id}`);
@@ -86,6 +89,7 @@ class PostService {
           "state",
           "postalCode",
           "country",
+          "category",
           "createdAt",
           "updatedAt",
         ],
