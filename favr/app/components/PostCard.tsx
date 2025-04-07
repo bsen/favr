@@ -89,7 +89,7 @@ export const PostCard = ({
     {address && (
       <View style={tw`flex-row items-center mb-3`}>
         <Text style={tw`text-[${theme.dark.text.secondary}] text-xs`}>
-          📍 {address}
+          {address}
         </Text>
       </View>
     )}
@@ -119,9 +119,9 @@ export const PostCard = ({
         <Button
           mode="contained"
           style={tw.style(`mt-3 rounded-lg`, {
-            backgroundColor: theme.dark.brand.primary,
+            backgroundColor: `${theme.dark.brand.primary}80`,
           })}
-          labelStyle={tw`text-white font-medium`}
+          labelStyle={tw`text-[${theme.dark.text.primary}] font-medium`}
           onPress={() =>
             onReply({
               id,
