@@ -129,7 +129,7 @@ export default function Profile() {
               <View style={tw`p-6 flex-row items-center`}>
                 <Avatar.Text
                   size={70}
-                  label={(userData?.firstName || "Guest")
+                  label={(userData?.fullName || "Guest")
                     .split(" ")
                     .map((n) => n[0])
                     .join("")}
@@ -139,7 +139,7 @@ export default function Profile() {
                   <Text
                     style={tw`text-[${theme.dark.text.primary}] text-xl font-semibold mb-1`}
                   >
-                    {userData?.firstName || "Guest"}
+                    {userData?.fullName || "Guest"}
                   </Text>
                   <Text style={tw`text-[${theme.dark.text.secondary}]`}>
                     {userData?.phone || "No phone number"}

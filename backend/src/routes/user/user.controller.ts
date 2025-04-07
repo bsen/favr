@@ -96,7 +96,7 @@ const getUserDetails = async (req: AuthRequest, res: Response) => {
 
 const updateUserDetails = async (req: AuthRequest, res: Response) => {
   try {
-    const { firstName, birthDate, gender, profilePicture } = req.body;
+    const { fullName, birthDate, gender, profilePicture } = req.body;
 
     if (!req.user) {
       logger.warn("User not found in request");
@@ -105,7 +105,7 @@ const updateUserDetails = async (req: AuthRequest, res: Response) => {
     }
 
     const user = await userService.updateUserProfile(req.user.id, {
-      firstName,
+      fullName,
       birthDate,
       gender,
       profilePicture,

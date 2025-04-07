@@ -6,25 +6,12 @@ import tw from "twrnc";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Location from "expo-location";
 import { theme, commonStyles } from "../theme";
-import { usePost } from "./contexts/PostContext";
+import { usePost, Post } from "./contexts/PostContext";
 import { useAuth } from "./contexts/AuthContext";
 import ReplyModal from "./components/ReplyModal";
 import PostModal from "./components/PostModal";
 import UserModal from "./components/UserModal";
 import { PostCard, PostSkeleton } from "./components/PostCard";
-
-interface Post {
-  id: number;
-  type: "offer" | "request";
-  title: string;
-  description: string;
-  price: number;
-  distance: number;
-  userName: string;
-  userId: string;
-  time: string;
-  profilePicture?: string;
-}
 
 export default function Home() {
   const {
@@ -49,7 +36,7 @@ export default function Home() {
   const [submitting, setSubmitting] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
   const [showUserModal, setShowUserModal] = useState(false);
-  const [firstName, setFirstName] = useState("");
+  const [fullName, setFullName] = useState("");
   const [birthDate, setBirthDate] = useState(new Date());
   const [gender, setGender] = useState("");
 
@@ -65,12 +52,12 @@ export default function Home() {
       if (!userDetails || !userDetails.id) return;
 
       if (
-        !userDetails.firstName ||
+        !userDetails.fullName ||
         !userDetails.birthDate ||
         !userDetails.gender
       ) {
         setShowUserModal(true);
-        if (userDetails.firstName) setFirstName(userDetails.firstName);
+        if (userDetails.fullName) setFullName(userDetails.fullName);
         if (userDetails.birthDate)
           setBirthDate(new Date(userDetails.birthDate));
         if (userDetails.gender) setGender(userDetails.gender);
@@ -88,7 +75,7 @@ export default function Home() {
   const openReplyModal = (post: Post) => {
     setSelectedPost(post);
     setReplyModalVisible(true);
-    setReplyPrice(post.price.toString());
+    setReplyPrice(post.price?.toString() || "0");
     setReplyDescription("");
   };
 
@@ -127,7 +114,7 @@ export default function Home() {
   const handleUserDetailsUpdate = async () => {
     try {
       const success = await updateUserDetails({
-        firstName,
+        fullName,
         birthDate,
         gender,
       });
@@ -211,10 +198,10 @@ export default function Home() {
 
       <UserModal
         show={showUserModal}
-        firstName={firstName}
+        fullName={fullName}
         birthDate={birthDate}
         gender={gender}
-        setFirstName={setFirstName}
+        setFullName={setFullName}
         setBirthDate={setBirthDate}
         setGender={setGender}
         loading={userLoading}

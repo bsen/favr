@@ -4,7 +4,6 @@ import sequelize from "../../config/database";
 enum PostType {
   Request = "request",
   Offer = "offer",
-  Announcement = "announcement",
 }
 
 enum PostStatus {
@@ -46,6 +45,7 @@ Post.init(
     },
     price: {
       type: DataTypes.INTEGER,
+      allowNull: true,
     },
     imageUrls: {
       type: DataTypes.ARRAY(DataTypes.STRING),
@@ -80,16 +80,7 @@ Post.init(
       allowNull: false,
     },
     category: {
-      type: DataTypes.ENUM(
-        "academic",
-        "clothing",
-        "travel",
-        "courier",
-        "furniture",
-        "electronics",
-        "food",
-        "other"
-      ),
+      type: DataTypes.STRING,
       allowNull: false,
     },
   },

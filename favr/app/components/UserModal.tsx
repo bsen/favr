@@ -13,10 +13,10 @@ import { theme, commonStyles } from "../../theme";
 
 interface UserModalProps {
   show: boolean;
-  firstName?: string;
+  fullName?: string;
   birthDate?: Date;
   gender?: string;
-  setFirstName?: (name: string) => void;
+  setFullName?: (name: string) => void;
   setBirthDate?: (date: Date) => void;
   setGender?: (gender: string) => void;
   loading?: boolean;
@@ -25,10 +25,10 @@ interface UserModalProps {
 
 export default function UserModal({
   show,
-  firstName = "",
+  fullName = "",
   birthDate = new Date(),
   gender = "",
-  setFirstName = () => {},
+  setFullName = () => {},
   setBirthDate = () => {},
   setGender = () => {},
   loading = false,
@@ -97,10 +97,10 @@ export default function UserModal({
                     What's your name?
                   </Text>
                   <TextInput
-                    value={firstName}
-                    onChangeText={setFirstName}
+                    value={fullName}
+                    onChangeText={setFullName}
                     mode="outlined"
-                    placeholder="Enter your first name"
+                    placeholder="Enter your full name"
                     style={tw`bg-[${theme.dark.background.tertiary}] rounded-xl`}
                     outlineColor="transparent"
                     activeOutlineColor={theme.dark.brand.primary}
@@ -293,15 +293,13 @@ export default function UserModal({
 
                 <TouchableOpacity
                   onPress={handleSubmit}
-                  disabled={loading || !firstName || !birthDate || !gender}
+                  disabled={loading || !fullName || !birthDate || !gender}
                   style={tw.style(
                     `py-3 rounded-xl flex-row items-center justify-center`,
                     {
                       backgroundColor: theme.dark.brand.primary,
                       opacity:
-                        loading || !firstName || !birthDate || !gender
-                          ? 0.7
-                          : 1,
+                        loading || !fullName || !birthDate || !gender ? 0.7 : 1,
                     }
                   )}
                 >

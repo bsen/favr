@@ -48,7 +48,7 @@ class UserService {
         attributes: [
           "id",
           "phone",
-          "firstName",
+          "fullName",
           "birthDate",
           "gender",
           "profilePicture",
@@ -75,7 +75,7 @@ class UserService {
   async updateUserProfile(
     id: string,
     updateData: {
-      firstName?: string;
+      fullName?: string;
       birthDate?: Date;
       gender?: string;
       profilePicture?: string;
@@ -91,8 +91,8 @@ class UserService {
       }
 
       const updateFields: any = {};
-      if (updateData.firstName !== undefined)
-        updateFields.firstName = updateData.firstName;
+      if (updateData.fullName !== undefined)
+        updateFields.fullName = updateData.fullName;
       if (updateData.birthDate !== undefined)
         updateFields.birthDate = updateData.birthDate;
       if (updateData.gender !== undefined)

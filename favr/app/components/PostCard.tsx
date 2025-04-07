@@ -3,19 +3,7 @@ import { View } from "react-native";
 import { Text, Surface, Avatar, Button } from "react-native-paper";
 import tw from "twrnc";
 import { theme, commonStyles } from "../../theme";
-
-interface Post {
-  id: number;
-  type: "offer" | "request";
-  title: string;
-  description: string;
-  price: number;
-  distance: number;
-  userName: string;
-  userId: string;
-  time: string;
-  profilePicture?: string;
-}
+import { Post } from "../contexts/PostContext";
 
 interface PostCardProps extends Post {
   isOwnPost: boolean;
@@ -28,10 +16,12 @@ export const PostCard = ({
   description,
   price,
   distance,
-  userName,
+  fullName,
   userId,
   time,
   type,
+  address,
+  category,
   profilePicture,
   isOwnPost,
   onReply,
@@ -47,14 +37,18 @@ export const PostCard = ({
     <View style={tw`flex-row items-center mb-4`}>
       <Avatar.Image
         size={48}
-        source={require("../../public/default-user.png")}
+        source={
+          profilePicture
+            ? { uri: profilePicture }
+            : require("../../public/default-user.png")
+        }
         style={tw`bg-[${theme.dark.background.border}]`}
       />
       <View style={tw`ml-3 flex-1`}>
         <Text
           style={tw`text-[${theme.dark.text.primary}] font-medium text-base`}
         >
-          {userName}
+          {fullName || "User"}
         </Text>
         <Text style={tw`text-[${theme.dark.text.secondary}] text-xs`}>
           {time}
@@ -62,15 +56,25 @@ export const PostCard = ({
       </View>
       <View
         style={tw.style(`px-3 py-1 rounded-full`, {
-          backgroundColor: theme.dark.button.primary.background,
+          backgroundColor:
+            type === "offer"
+              ? `${theme.dark.brand.primary}20`
+              : `${theme.dark.background.glass.background}`,
           borderWidth: 1,
-          borderColor: theme.dark.background.glass.border,
+          borderColor:
+            type === "offer"
+              ? theme.dark.brand.primary
+              : theme.dark.background.glass.border,
         })}
       >
         <Text
-          style={tw`text-[${theme.dark.brand.primary}] text-xs font-medium`}
+          style={tw`${
+            type === "offer"
+              ? `text-[${theme.dark.brand.primary}]`
+              : `text-[${theme.dark.text.primary}]`
+          } text-xs font-medium`}
         >
-          {type.charAt(0).toUpperCase() + type.slice(1)}
+          {type === "offer" ? "Offering" : "Requesting"}
         </Text>
       </View>
     </View>
@@ -78,58 +82,66 @@ export const PostCard = ({
     <Text style={tw`text-[${theme.dark.text.primary}] text-lg font-bold mb-2`}>
       {title}
     </Text>
-    <Text style={tw`text-[${theme.dark.text.secondary}] mb-4 leading-5`}>
+    <Text style={tw`text-[${theme.dark.text.secondary}] mb-3 leading-5`}>
       {description}
     </Text>
 
-    <View
-      style={tw.style(`flex-row justify-between items-center pt-2`, {
-        borderTopWidth: 1,
-        borderTopColor: theme.dark.background.glass.border,
-      })}
-    >
-      <Text style={tw`text-[${theme.dark.brand.primary}] text-lg font-bold`}>
-        ₹{price}
-      </Text>
-      <Text style={tw`text-[${theme.dark.text.secondary}] text-sm`}>
-        {distance} km away
-      </Text>
-    </View>
-
-    {!isOwnPost && (
-      <Button
-        mode="contained"
-        style={tw.style(`mt-3 rounded-lg`, {
-          backgroundColor: theme.dark.brand.primary,
-        })}
-        labelStyle={tw`text-white font-medium`}
-        onPress={() =>
-          onReply({
-            id,
-            title,
-            description,
-            price,
-            distance,
-            userName,
-            userId,
-            time,
-            type,
-            profilePicture,
-          })
-        }
-      >
-        Make Offer
-      </Button>
-    )}
-
-    {isOwnPost && (
-      <View
-        style={tw`mt-3 px-2 py-1 rounded-lg self-start bg-[${theme.dark.background.secondary}]`}
-      >
+    {address && (
+      <View style={tw`flex-row items-center mb-3`}>
         <Text style={tw`text-[${theme.dark.text.secondary}] text-xs`}>
-          Your post
+          📍 {address}
         </Text>
       </View>
+    )}
+
+    {!isOwnPost && (
+      <>
+        <View
+          style={tw.style(`flex-row justify-between items-center pt-3`, {
+            borderTopWidth: 1,
+            borderTopColor: theme.dark.background.glass.border,
+          })}
+        >
+          {type === "offer" && price !== null && price !== undefined ? (
+            <Text
+              style={tw`text-[${theme.dark.brand.primary}] text-lg font-bold`}
+            >
+              ₹{price}
+            </Text>
+          ) : (
+            <View />
+          )}
+          <Text style={tw`text-[${theme.dark.text.secondary}] text-sm`}>
+            {distance} km away
+          </Text>
+        </View>
+
+        <Button
+          mode="contained"
+          style={tw.style(`mt-3 rounded-lg`, {
+            backgroundColor: theme.dark.brand.primary,
+          })}
+          labelStyle={tw`text-white font-medium`}
+          onPress={() =>
+            onReply({
+              id,
+              title,
+              description,
+              price,
+              distance,
+              fullName,
+              userId,
+              time,
+              type,
+              address,
+              category,
+              profilePicture,
+            })
+          }
+        >
+          {type === "offer" ? "Get the deal" : "Give an offer"}
+        </Button>
+      </>
     )}
   </Surface>
 );

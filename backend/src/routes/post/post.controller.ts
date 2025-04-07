@@ -27,6 +27,26 @@ const createPost = async (req: AuthRequest, res: Response) => {
       return;
     }
 
+    if (!type || !["offer", "request"].includes(type)) {
+      logger.warn(`Invalid post type provided: ${type}`);
+      res
+        .status(400)
+        .json({ message: "Valid post type (offer or request) is required" });
+      return;
+    }
+
+    if (type === "offer" && (price === undefined || price === null)) {
+      logger.warn("Missing price for offer post");
+      res.status(400).json({ message: "Price is required for offer posts" });
+      return;
+    }
+
+    if (!category) {
+      logger.warn("Missing category in createPost request");
+      res.status(400).json({ message: "Category is required" });
+      return;
+    }
+
     if (!latitude || !longitude) {
       logger.warn("Missing coordinates in createPost request");
       res.status(400).json({ message: "Latitude and longitude are required" });
@@ -43,7 +63,7 @@ const createPost = async (req: AuthRequest, res: Response) => {
       title,
       description,
       imageUrls,
-      price,
+      price: type === "request" ? undefined : parseFloat(price),
       type,
       userId: req.user.id,
       latitude: parseFloat(latitude),

@@ -5,7 +5,7 @@ import { API_BASE_URL } from "../../config";
 
 interface UserData {
   id?: string;
-  firstName?: string;
+  fullName?: string;
   phone?: string;
   profilePicture?: string;
   birthDate?: string;
@@ -19,7 +19,7 @@ interface AuthContextType {
   sendOtp: (phoneNumber: string) => Promise<boolean>;
   verifyOtp: (phoneNumber: string, otp: string) => Promise<void>;
   updateUserDetails: (details: {
-    firstName?: string;
+    fullName?: string;
     birthDate?: Date;
     gender?: string;
     profilePicture?: string;
@@ -145,7 +145,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateUserDetails = async (details: {
-    firstName?: string;
+    fullName?: string;
     birthDate?: Date;
     gender?: string;
     profilePicture?: string;

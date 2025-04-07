@@ -2,16 +2,18 @@ import React, { createContext, useContext, useState } from "react";
 import { API_BASE_URL } from "../../config";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-interface Post {
+export interface Post {
   id: number;
   type: "offer" | "request";
   title: string;
   description: string;
-  price: number;
+  price: number | null;
   distance: number;
-  userName: string;
+  fullName: string;
   userId: string;
   time: string;
+  address?: string;
+  category?: string;
   image?: string;
   profilePicture?: string;
 }
@@ -29,7 +31,7 @@ export type PostCategory =
 interface CreatePostData {
   title: string;
   description: string;
-  price: number;
+  price?: number;
   type: "offer" | "request";
   latitude: number;
   longitude: number;
@@ -115,12 +117,14 @@ export const PostProvider = ({ children }: { children: React.ReactNode }) => {
         type: post.type || "offer",
         title: post.title || "",
         description: post.description || "",
-        price: post.price || 0,
-        distance: Number(post.distance).toFixed(2),
-        userName: post.userName || "User",
-        userId: post.userId || "",
+        price: post.price,
+        distance: Number(post.distance || 0).toFixed(2),
+        fullName: post.user?.fullName || "User",
+        userId: post.userId || post.user?.id || "",
+        address: post.address || "",
+        category: post.category || "",
         time: getTimeDifference(post.createdAt),
-        profilePicture: post.profilePicture,
+        profilePicture: post.user?.profilePicture || null,
       }));
 
       setPosts(formattedPosts);

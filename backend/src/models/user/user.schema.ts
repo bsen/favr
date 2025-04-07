@@ -3,9 +3,10 @@ import sequelize from "../../config/database";
 
 class User extends Model {
   id!: string;
-  name?: string;
-  bio?: string;
+  fullName?: string;
+  birthDate?: string;
   profilePicture?: string;
+  gender?: string;
   phone!: string;
   isActive!: boolean;
   createdAt?: Date;
@@ -20,7 +21,7 @@ User.init(
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
-    firstName: {
+    fullName: {
       type: DataTypes.STRING,
       allowNull: true,
     },

@@ -9,11 +9,11 @@ interface PostData {
   imageUrls?: string[];
   userId: string;
   price?: number;
-  type?: string;
+  type: string;
   latitude: number;
   longitude: number;
   address?: string;
-  category?: string;
+  category: string;
 }
 
 class PostService {
@@ -23,13 +23,40 @@ class PostService {
     );
   }
 
+  private validatePostData(postData: PostData): string | null {
+    if (!postData.title.trim()) {
+      return "Title is required";
+    }
+
+    if (
+      postData.type === "offer" &&
+      (postData.price === undefined || postData.price === null)
+    ) {
+      return "Price is required for offers";
+    }
+
+    if (postData.type === "request" && postData.price !== undefined) {
+      postData.price = undefined;
+    }
+
+    if (!this.validateCoordinates(postData.latitude, postData.longitude)) {
+      return "Invalid coordinates provided";
+    }
+
+    if (!postData.category) {
+      return "Category is required";
+    }
+
+    return null;
+  }
+
   async createPost({
     title,
     description,
     imageUrls,
     userId,
     price,
-    type = "offer",
+    type,
     latitude,
     longitude,
     address,
@@ -40,9 +67,22 @@ class PostService {
         `Creating new post for user: ${userId} at coordinates: ${latitude}, ${longitude}`
       );
 
-      if (!this.validateCoordinates(latitude, longitude)) {
-        logger.warn(`Invalid coordinates provided: ${latitude}, ${longitude}`);
-        throw new Error("Invalid coordinates provided");
+      const validationError = this.validatePostData({
+        title,
+        description,
+        imageUrls,
+        userId,
+        price,
+        type,
+        latitude,
+        longitude,
+        address,
+        category,
+      });
+
+      if (validationError) {
+        logger.warn(`Validation error: ${validationError}`);
+        throw new Error(validationError);
       }
 
       const post = await Post.create({
@@ -50,7 +90,7 @@ class PostService {
         description,
         imageUrls,
         userId,
-        price,
+        price: type === "request" ? null : price,
         type,
         latitude,
         longitude,
@@ -68,7 +108,9 @@ class PostService {
           error instanceof Error ? error.message : "Unknown error"
         }`
       );
-      throw new Error("Failed to create post");
+      throw new Error(
+        error instanceof Error ? error.message : "Failed to create post"
+      );
     }
   }
 
@@ -135,7 +177,7 @@ class PostService {
         include: [
           {
             model: User,
-            attributes: ["id", "firstName", "profilePicture"],
+            attributes: ["id", "fullName", "profilePicture"],
             as: "user",
           },
         ],

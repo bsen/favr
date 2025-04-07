@@ -17,23 +17,11 @@ import {
 } from "react-native-paper";
 import tw from "twrnc";
 import { theme, commonStyles } from "../../theme";
-
-interface Reply {
-  id: number;
-  title: string;
-  price: number;
-  description?: string;
-  type?: string;
-  userId?: string;
-  userName?: string;
-  distance?: number;
-  time?: string;
-  profilePicture?: string;
-}
+import { Post } from "../contexts/PostContext";
 
 interface ReplyModalProps {
   visible: boolean;
-  selectedReply: Reply | null;
+  selectedReply: Post | null;
   replyPrice: string;
   replyDescription: string;
   submitting: boolean;
@@ -111,7 +99,7 @@ export default function ReplyModal({
                       <Text
                         style={tw`text-[${theme.dark.brand.primary}] font-bold text-base ml-2`}
                       >
-                        ₹{selectedReply.price}
+                        ₹{selectedReply.price || 0}
                       </Text>
                     </View>
                   </Surface>
