@@ -12,7 +12,7 @@ const createPost = async (req: AuthRequest, res: Response) => {
     const {
       title,
       description,
-      imageUrls,
+      images,
       price,
       type,
       category,
@@ -62,7 +62,7 @@ const createPost = async (req: AuthRequest, res: Response) => {
     const post = await postService.createPost({
       title,
       description,
-      imageUrls,
+      images,
       price: type === "request" ? undefined : parseFloat(price),
       type,
       userId: req.user.id,
@@ -74,6 +74,7 @@ const createPost = async (req: AuthRequest, res: Response) => {
 
     res.status(201).json({
       post,
+      success: true,
       message: "Post created successfully",
     });
   } catch (error) {
@@ -84,6 +85,7 @@ const createPost = async (req: AuthRequest, res: Response) => {
     );
     res.status(400).json({
       message: error instanceof Error ? error.message : "Failed to create post",
+      success: false,
     });
   }
 };
@@ -97,7 +99,10 @@ const getUserPosts = async (req: AuthRequest, res: Response) => {
     }
 
     const posts = await postService.getUserPosts(req.user.id);
-    res.status(200).json({ posts });
+    res.status(200).json({
+      posts,
+      success: true,
+    });
   } catch (error) {
     logger.error(
       `Error in getUserPosts controller: ${
@@ -107,6 +112,7 @@ const getUserPosts = async (req: AuthRequest, res: Response) => {
     res.status(400).json({
       message:
         error instanceof Error ? error.message : "Failed to get user posts",
+      success: false,
     });
   }
 };
@@ -140,6 +146,7 @@ const getNearbyPosts = async (req: AuthRequest, res: Response) => {
       totalCount: result.totalCount,
       currentPage: result.currentPage,
       hasMore: result.hasMore,
+      success: true,
     });
   } catch (error) {
     logger.error(
@@ -150,6 +157,7 @@ const getNearbyPosts = async (req: AuthRequest, res: Response) => {
     res.status(400).json({
       message:
         error instanceof Error ? error.message : "Failed to get nearby posts",
+      success: false,
     });
   }
 };
@@ -165,15 +173,24 @@ const updatePostStatus = async (req: AuthRequest, res: Response) => {
       return;
     }
 
+    if (!["open", "closed"].includes(status)) {
+      logger.warn(`Invalid status provided: ${status}`);
+      res
+        .status(400)
+        .json({ message: "Valid status (open, closed) is required" });
+      return;
+    }
+
     if (!req.user) {
       logger.warn("User not found in request");
       res.status(401).json({ message: "User not authenticated" });
       return;
     }
 
-    await postService.updatePostStatus(id, req.user.id, status);
+    await postService.updatePostStatus(parseInt(id), req.user.id, status);
     res.status(200).json({
       message: "Post status updated successfully",
+      success: true,
     });
   } catch (error) {
     logger.error(
@@ -184,6 +201,7 @@ const updatePostStatus = async (req: AuthRequest, res: Response) => {
     res.status(400).json({
       message:
         error instanceof Error ? error.message : "Failed to update post status",
+      success: false,
     });
   }
 };

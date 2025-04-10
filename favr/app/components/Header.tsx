@@ -1,22 +1,32 @@
-import React, { useEffect, useState } from "react";
-import { View, ScrollView, Platform } from "react-native";
+import React, { useState } from "react";
+import { View, ScrollView, Platform, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, Surface } from "react-native-paper";
 import tw from "twrnc";
 import { theme, commonStyles } from "../../theme";
 import { MagnifyingGlassIcon } from "react-native-heroicons/outline";
 import { BlurView } from "expo-blur";
+import { router } from "expo-router";
 
-export default function Header() {
-  const categories = [
-    "offer",
-    "request",
-    "community",
-    "events",
-    "jobs",
-    "services",
-    "products",
-  ];
+interface HeaderProps {
+  onCategorySelect?: (category: string) => void;
+}
+
+export default function Header({ onCategorySelect }: HeaderProps) {
+  const categories = ["offer", "request"];
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  const handleProfileNavigation = () => {
+    router.push("/profile");
+  };
+
+  const handleCategoryPress = (category: string) => {
+    const newCategory = selectedCategory === category ? null : category;
+    setSelectedCategory(newCategory);
+    if (onCategorySelect) {
+      onCategorySelect(newCategory || "all");
+    }
+  };
 
   const HeaderContent = () => (
     <>
@@ -25,8 +35,11 @@ export default function Header() {
           <Text style={tw`text-xl font-bold text-[${theme.dark.text.primary}]`}>
             favr
           </Text>
-          <View style={tw`flex-row items-center gap-2`}>
+          <View style={tw`flex-row items-center gap-4`}>
             <MagnifyingGlassIcon size={20} color={theme.dark.text.primary} />
+            <TouchableOpacity onPress={handleProfileNavigation}>
+              <Text style={tw`text-[${theme.dark.text.primary}]`}>Profile</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </SafeAreaView>
@@ -36,21 +49,32 @@ export default function Header() {
         contentContainerStyle={tw`gap-2 flex items-center mx-4 py-2 pb-3`}
       >
         {categories.map((category) => (
-          <View
+          <TouchableOpacity
             key={category}
-            style={tw.style(`py-1 px-4 flex rounded-full`, {
-              backgroundColor: theme.dark.button.primary.background,
-              borderWidth: 1,
-              borderColor: theme.dark.background.glass.border,
-              ...commonStyles.glass,
-            })}
+            onPress={() => handleCategoryPress(category)}
           >
-            <Text
-              style={tw`text-[${theme.dark.button.primary.text}] text-center text-sm font-medium capitalize`}
+            <View
+              style={tw.style(`py-1 px-4 flex rounded-full`, {
+                backgroundColor:
+                  selectedCategory === category
+                    ? theme.dark.brand.primary
+                    : theme.dark.button.primary.background,
+                borderWidth: 1,
+                borderColor: theme.dark.background.glass.border,
+                ...commonStyles.glass,
+              })}
             >
-              {category}
-            </Text>
-          </View>
+              <Text
+                style={tw`text-[${
+                  selectedCategory === category
+                    ? theme.dark.text.primary
+                    : theme.dark.button.primary.text
+                }] text-center text-sm font-medium capitalize`}
+              >
+                {category}
+              </Text>
+            </View>
+          </TouchableOpacity>
         ))}
       </ScrollView>
     </>

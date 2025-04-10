@@ -4,7 +4,7 @@ import cors from "cors";
 import modules from "./models/index";
 import userRoutes from "./routes/user/user.routes";
 import postRoutes from "./routes/post/post.routes";
-import replyRoutes from "./routes/reply/reply.routes";
+import messageRoutes from "./routes/message/message.routes";
 import logger from "./utils/logger";
 
 dotenv.config();
@@ -21,7 +21,7 @@ app.get("/", (req, res) => {
 
 app.use("/api/v1/user", userRoutes);
 app.use("/api/v1/post", postRoutes);
-app.use("/api/v1/reply", replyRoutes);
+app.use("/api/v1/message", messageRoutes);
 
 const start = async () => {
   try {

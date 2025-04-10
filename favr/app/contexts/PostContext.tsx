@@ -18,6 +18,19 @@ export interface Post {
   profilePicture?: string;
 }
 
+export interface Message {
+  id: number;
+  price: number | null;
+  text: string;
+  status: string;
+  createdAt: string;
+  user: {
+    id: string;
+    name: string;
+    profilePicture: string | null;
+  };
+}
+
 export type PostCategory =
   | "academic"
   | "clothing"
@@ -39,22 +52,26 @@ interface CreatePostData {
   category: PostCategory;
 }
 
-interface CreateReplyData {
+interface CreateMessageData {
   postId: number;
-  price: number;
-  description: string;
+  price?: number;
+  text: string;
   imageUrls?: string[];
 }
 
 interface PostContextType {
   posts: Post[];
+  userPosts: Post[];
+  postMessages: Message[];
   loading: boolean;
   refreshing: boolean;
   error: string | null;
   fetchPosts: (latitude: number, longitude: number) => Promise<void>;
+  fetchUserPosts: () => Promise<void>;
+  fetchPostMessages: (postId: number) => Promise<void>;
   createPost: (data: CreatePostData) => Promise<boolean>;
   refreshPosts: () => Promise<void>;
-  createReply: (data: CreateReplyData) => Promise<boolean>;
+  createMessage: (data: CreateMessageData) => Promise<boolean>;
 }
 
 const PostContext = createContext<PostContextType | undefined>(undefined);
@@ -80,6 +97,8 @@ const getTimeDifference = (createdAt: string) => {
 
 export const PostProvider = ({ children }: { children: React.ReactNode }) => {
   const [posts, setPosts] = useState<Post[]>([]);
+  const [userPosts, setUserPosts] = useState<Post[]>([]);
+  const [postMessages, setPostMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -137,6 +156,82 @@ export const PostProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const fetchUserPosts = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const token = await AsyncStorage.getItem("auth_token");
+      if (!token) throw new Error("No auth token");
+
+      const response = await fetch(`${API_BASE_URL}/post`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+      });
+
+      if (!response.ok) throw new Error("Failed to fetch user posts");
+
+      const data = await response.json();
+
+      const formattedPosts = (
+        Array.isArray(data) ? data : data.posts || []
+      ).map((post: any) => ({
+        id: post.id,
+        type: post.type || "offer",
+        title: post.title || "",
+        description: post.description || "",
+        price: post.price,
+        distance: 0,
+        fullName: post.user?.fullName || "User",
+        userId: post.userId || post.user?.id || "",
+        address: post.address || "",
+        category: post.category || "",
+        time: getTimeDifference(post.createdAt),
+        profilePicture: post.user?.profilePicture || null,
+      }));
+
+      setUserPosts(formattedPosts);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to fetch user posts"
+      );
+      setUserPosts([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchPostMessages = async (postId: number) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const token = await AsyncStorage.getItem("auth_token");
+      if (!token) throw new Error("No auth token");
+
+      const response = await fetch(`${API_BASE_URL}/message/post/${postId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+      });
+
+      if (!response.ok) throw new Error("Failed to fetch post messages");
+
+      const data = await response.json();
+      setPostMessages(data.messages || []);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to fetch post messages"
+      );
+      setPostMessages([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const createPost = async (data: CreatePostData): Promise<boolean> => {
     try {
       const token = await AsyncStorage.getItem("auth_token");
@@ -179,12 +274,12 @@ export const PostProvider = ({ children }: { children: React.ReactNode }) => {
     setRefreshing(false);
   };
 
-  const createReply = async (data: CreateReplyData): Promise<boolean> => {
+  const createMessage = async (data: CreateMessageData): Promise<boolean> => {
     try {
       const token = await AsyncStorage.getItem("auth_token");
       if (!token) throw new Error("No auth token");
 
-      const response = await fetch(`${API_BASE_URL}/reply`, {
+      const response = await fetch(`${API_BASE_URL}/message`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -195,12 +290,12 @@ export const PostProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to create reply");
+        throw new Error(errorData.message || "Failed to create message");
       }
 
       return true;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create reply");
+      setError(err instanceof Error ? err.message : "Failed to create message");
       return false;
     }
   };
@@ -209,13 +304,17 @@ export const PostProvider = ({ children }: { children: React.ReactNode }) => {
     <PostContext.Provider
       value={{
         posts,
+        userPosts,
+        postMessages,
         loading,
         refreshing,
         error,
         fetchPosts,
+        fetchUserPosts,
+        fetchPostMessages,
         createPost,
         refreshPosts,
-        createReply,
+        createMessage,
       }}
     >
       {children}

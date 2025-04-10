@@ -7,9 +7,8 @@ enum PostType {
 }
 
 enum PostStatus {
-  Active = "active",
-  Completed = "completed",
-  Cancelled = "cancelled",
+  Open = "open",
+  Closed = "closed",
 }
 
 class Post extends Model {
@@ -17,7 +16,7 @@ class Post extends Model {
   title!: string;
   description?: string;
   price?: number;
-  imageUrls?: string[];
+  images?: string[];
   userId!: string;
   latitude!: number;
   longitude!: number;
@@ -25,6 +24,10 @@ class Post extends Model {
   status!: PostStatus;
   type!: PostType;
   category?: string;
+  metrics?: {
+    views: number;
+    responses: number;
+  };
   createdAt!: Date;
   updatedAt!: Date;
 }
@@ -47,7 +50,7 @@ Post.init(
       type: DataTypes.INTEGER,
       allowNull: true,
     },
-    imageUrls: {
+    images: {
       type: DataTypes.ARRAY(DataTypes.STRING),
     },
     userId: {
@@ -71,9 +74,9 @@ Post.init(
       allowNull: true,
     },
     status: {
-      type: DataTypes.ENUM("active", "cancelled", "completed"),
+      type: DataTypes.ENUM("open", "closed"),
       allowNull: false,
-      defaultValue: "active",
+      defaultValue: "open",
     },
     type: {
       type: DataTypes.ENUM("request", "offer"),
@@ -82,6 +85,11 @@ Post.init(
     category: {
       type: DataTypes.STRING,
       allowNull: false,
+    },
+    metrics: {
+      type: DataTypes.JSONB,
+      allowNull: true,
+      defaultValue: { views: 0, responses: 0 },
     },
   },
   {
@@ -98,6 +106,12 @@ Post.init(
       },
       {
         fields: ["type"],
+      },
+      {
+        fields: ["category"],
+      },
+      {
+        fields: ["status"],
       },
     ],
   }

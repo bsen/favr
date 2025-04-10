@@ -33,6 +33,13 @@ export const theme = {
       },
     },
 
+    status: {
+      success: "#10b981",
+      warning: "#f59e0b",
+      error: "#ef4444",
+      info: "#3b82f6",
+    },
+
     button: {
       primary: {
         background: "rgba(29, 29, 29, 0.8)",

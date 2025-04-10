@@ -6,7 +6,7 @@ import { Op } from "sequelize";
 interface PostData {
   title: string;
   description?: string;
-  imageUrls?: string[];
+  images?: string[];
   userId: string;
   price?: number;
   type: string;
@@ -53,7 +53,7 @@ class PostService {
   async createPost({
     title,
     description,
-    imageUrls,
+    images,
     userId,
     price,
     type,
@@ -70,7 +70,7 @@ class PostService {
       const validationError = this.validatePostData({
         title,
         description,
-        imageUrls,
+        images,
         userId,
         price,
         type,
@@ -88,7 +88,7 @@ class PostService {
       const post = await Post.create({
         title,
         description,
-        imageUrls,
+        images,
         userId,
         price: type === "request" ? null : price,
         type,
@@ -96,6 +96,10 @@ class PostService {
         longitude,
         address,
         category,
+        metrics: {
+          views: 0,
+          responses: 0,
+        },
       });
 
       logger.info(
@@ -124,13 +128,14 @@ class PostService {
           "title",
           "description",
           "price",
-          "imageUrls",
+          "images",
           "status",
           "type",
           "latitude",
           "longitude",
           "address",
           "category",
+          "metrics",
           "createdAt",
           "updatedAt",
         ],
@@ -166,7 +171,7 @@ class PostService {
 
       const { count, rows: posts } = await Post.findAndCountAll({
         where: {
-          status: "active",
+          status: "open",
           latitude: {
             [Op.between]: [latitude - latRange, latitude + latRange],
           },
@@ -194,6 +199,13 @@ class PostService {
             post.latitude,
             post.longitude
           );
+
+          this.incrementViews(post.id).catch((err) => {
+            logger.error(
+              `Failed to increment views for post ${post.id}: ${err.message}`
+            );
+          });
+
           return {
             ...post.toJSON(),
             distance,
@@ -215,6 +227,22 @@ class PostService {
         }`
       );
       throw new Error("Failed to fetch nearby posts");
+    }
+  }
+
+  private async incrementViews(postId: number) {
+    try {
+      const post = await Post.findByPk(postId);
+      if (post) {
+        await post.update({
+          metrics: {
+            ...post.metrics,
+            views: (post.metrics?.views || 0) + 1,
+          },
+        });
+      }
+    } catch (error) {
+      throw error;
     }
   }
 
@@ -241,7 +269,7 @@ class PostService {
     return (value * Math.PI) / 180;
   }
 
-  async updatePostStatus(id: string, userId: string, status: string) {
+  async updatePostStatus(id: number, userId: string, status: string) {
     try {
       logger.info(`Updating post status with ID: ${id}`);
       const post = await Post.findOne({
@@ -253,7 +281,7 @@ class PostService {
         throw new Error("Post not found");
       }
 
-      await post.update({ status: status });
+      await post.update({ status });
       logger.info(`Post updated successfully: ${id}`);
       return true;
     } catch (error) {

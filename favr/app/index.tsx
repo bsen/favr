@@ -8,10 +8,12 @@ import * as Location from "expo-location";
 import { theme, commonStyles } from "../theme";
 import { usePost, Post } from "./contexts/PostContext";
 import { useAuth } from "./contexts/AuthContext";
-import ReplyModal from "./components/ReplyModal";
+import MessageModal from "./components/MessageModal";
 import PostModal from "./components/PostModal";
 import UserModal from "./components/UserModal";
 import { PostCard, PostSkeleton } from "./components/PostCard";
+import Header from "./components/Header";
+import AppBar from "./components/AppBar";
 
 export default function Home() {
   const {
@@ -19,7 +21,7 @@ export default function Home() {
     loading: postsLoading,
     refreshing,
     fetchPosts,
-    createReply,
+    createMessage,
   } = usePost();
   const {
     userData,
@@ -28,17 +30,19 @@ export default function Home() {
     fetchUserDetails,
     setUserData,
   } = useAuth();
-  const [replyModalVisible, setReplyModalVisible] = useState(false);
+  const [messageModalVisible, setMessageModalVisible] = useState(false);
   const [createPostModalVisible, setCreatePostModalVisible] = useState(false);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
-  const [replyPrice, setReplyPrice] = useState("");
-  const [replyDescription, setReplyDescription] = useState("");
+  const [messagePrice, setMessagePrice] = useState("");
+  const [messageText, setMessageText] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
   const [showUserModal, setShowUserModal] = useState(false);
   const [fullName, setFullName] = useState("");
   const [birthDate, setBirthDate] = useState(new Date());
   const [gender, setGender] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [filteredPosts, setFilteredPosts] = useState<Post[]>([]);
 
   useEffect(() => {
     const initialize = async () => {
@@ -72,36 +76,48 @@ export default function Home() {
     initialize();
   }, []);
 
-  const openReplyModal = (post: Post) => {
+  useEffect(() => {
+    if (selectedCategory === "all") {
+      setFilteredPosts(posts);
+    } else {
+      setFilteredPosts(posts.filter((post) => post.type === selectedCategory));
+    }
+  }, [selectedCategory, posts]);
+
+  const handleCategorySelect = (category: string) => {
+    setSelectedCategory(category);
+  };
+
+  const openMessageModal = (post: Post) => {
     setSelectedPost(post);
-    setReplyModalVisible(true);
-    setReplyPrice(post.price?.toString() || "0");
-    setReplyDescription("");
+    setMessageModalVisible(true);
+    setMessagePrice(post.price?.toString() || "");
+    setMessageText("");
   };
 
-  const closeReplyModal = () => {
-    setReplyModalVisible(false);
+  const closeMessageModal = () => {
+    setMessageModalVisible(false);
     setSelectedPost(null);
-    setReplyPrice("");
-    setReplyDescription("");
+    setMessagePrice("");
+    setMessageText("");
   };
 
-  const handleSubmitReply = async () => {
-    if (!selectedPost || !replyPrice || !replyDescription) return;
+  const handleSubmitMessage = async () => {
+    if (!selectedPost || !messageText) return;
 
     setSubmitting(true);
     try {
-      const success = await createReply({
+      const success = await createMessage({
         postId: selectedPost.id,
-        price: Number(replyPrice),
-        description: replyDescription,
+        price: messagePrice ? Number(messagePrice) : undefined,
+        text: messageText,
       });
 
       if (success) {
-        closeReplyModal();
+        closeMessageModal();
       }
     } catch (error) {
-      console.error("Failed to submit reply:", error);
+      console.error("Failed to submit message:", error);
     } finally {
       setSubmitting(false);
     }
@@ -137,12 +153,18 @@ export default function Home() {
     }
   };
 
+  const handleCreatePostPress = () => {
+    setCreatePostModalVisible(true);
+  };
+
   return (
     <View
       style={tw.style(`bg-[${theme.dark.background.primary}]`, {
         height: "100%",
       })}
     >
+      <Header onCategorySelect={handleCategorySelect} />
+
       <ScrollView
         style={tw.style({ height: "100%" })}
         contentContainerStyle={tw`pt-40 pb-36 px-4`}
@@ -159,36 +181,40 @@ export default function Home() {
           Array(3)
             .fill(0)
             .map((_, i) => <PostSkeleton key={i} />)
-        ) : posts.length === 0 ? (
+        ) : filteredPosts.length === 0 ? (
           <Surface
             style={tw`mx-0 my-2 p-6 bg-[${theme.dark.background.secondary}] rounded-xl items-center`}
           >
             <Text style={tw`text-[${theme.dark.text.secondary}] text-center`}>
-              No posts found nearby. Be the first to post!
+              No posts found
+              {selectedCategory !== "all"
+                ? ` in "${selectedCategory}" category`
+                : " nearby"}
+              . Be the first to post!
             </Text>
           </Surface>
         ) : (
-          posts.map((post) => (
+          filteredPosts.map((post) => (
             <PostCard
               key={post.id}
               {...post}
               isOwnPost={userData?.id === post.userId}
-              onReply={openReplyModal}
+              onReply={openMessageModal}
             />
           ))
         )}
       </ScrollView>
 
-      <ReplyModal
-        visible={replyModalVisible}
-        selectedReply={selectedPost}
-        replyPrice={replyPrice}
-        replyDescription={replyDescription}
+      <MessageModal
+        visible={messageModalVisible}
+        selectedPost={selectedPost}
+        messagePrice={messagePrice}
+        messageText={messageText}
         submitting={submitting}
-        onChangePrice={setReplyPrice}
-        onChangeDescription={setReplyDescription}
-        onClose={closeReplyModal}
-        onSubmit={handleSubmitReply}
+        onChangePrice={setMessagePrice}
+        onChangeText={setMessageText}
+        onClose={closeMessageModal}
+        onSubmit={handleSubmitMessage}
       />
 
       <PostModal
@@ -207,6 +233,8 @@ export default function Home() {
         loading={userLoading}
         onSubmit={handleUserDetailsUpdate}
       />
+
+      <AppBar onCreatePress={handleCreatePostPress} />
     </View>
   );
 }
