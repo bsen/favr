@@ -2,8 +2,6 @@ import React from "react";
 import {
   View,
   Modal,
-  TouchableWithoutFeedback,
-  TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -90,26 +88,26 @@ export default function MessageModal({
                     >
                       {selectedPost.title}
                     </Text>
-                    {selectedPost.price ? (
-                      <View style={tw`flex-row items-center`}>
-                        <Text
-                          style={tw`text-[${theme.dark.text.secondary}] text-sm`}
-                        >
-                          Original price:
-                        </Text>
+                    <View style={tw`flex-row items-center`}>
+                      <Text
+                        style={tw`text-[${theme.dark.text.secondary}] text-sm`}
+                      >
+                        {selectedPost.price ? "Original price:" : "Status:"}
+                      </Text>
+                      {selectedPost.price ? (
                         <Text
                           style={tw`text-[${theme.dark.brand.primary}] font-bold text-base ml-2`}
                         >
                           ${selectedPost.price}
                         </Text>
-                      </View>
-                    ) : (
-                      <Text
-                        style={tw`text-[${theme.dark.text.secondary}] text-sm`}
-                      >
-                        Free
-                      </Text>
-                    )}
+                      ) : (
+                        <Text
+                          style={tw`text-[${theme.dark.text.secondary}] text-sm ml-2`}
+                        >
+                          Free
+                        </Text>
+                      )}
+                    </View>
                   </Surface>
                 )}
 
@@ -128,6 +126,7 @@ export default function MessageModal({
                     outlineColor="transparent"
                     activeOutlineColor={theme.dark.brand.primary}
                     textColor={theme.dark.text.primary}
+                    placeholder="Enter amount"
                   />
                 </View>
 
@@ -148,6 +147,7 @@ export default function MessageModal({
                     outlineColor="transparent"
                     activeOutlineColor={theme.dark.brand.primary}
                     textColor={theme.dark.text.primary}
+                    placeholder="Write your message here..."
                   />
                 </View>
 

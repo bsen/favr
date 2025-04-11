@@ -6,7 +6,7 @@ import tw from "twrnc";
 import { theme, commonStyles } from "../../theme";
 import { BlurView } from "expo-blur";
 
-type AppRoute = "/" | "/user-posts";
+type AppRoute = "/" | "/posts";
 
 interface AppBarProps {
   onCreatePress: () => void;
@@ -16,14 +16,14 @@ export default function AppBar({ onCreatePress }: AppBarProps) {
   const pathname = usePathname();
 
   const handleNavigation = (route: AppRoute) => {
-    router.push(route);
+    router.push(route as any);
   };
 
   const AppBarContent = () => (
     <View style={tw`flex-row items-center justify-around py-3 px-6`}>
       <TouchableOpacity onPress={() => handleNavigation("/")}>
         <IconButton
-          icon="home"
+          icon="home-outline"
           size={24}
           iconColor={
             pathname === "/"
@@ -42,12 +42,12 @@ export default function AppBar({ onCreatePress }: AppBarProps) {
         <IconButton icon="plus" size={24} iconColor="white" style={tw`m-0`} />
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => handleNavigation("/user-posts")}>
+      <TouchableOpacity onPress={() => handleNavigation("/posts")}>
         <IconButton
-          icon="post"
+          icon="clipboard-text-outline"
           size={24}
           iconColor={
-            pathname === "/user-posts"
+            pathname === "/posts"
               ? theme.dark.brand.primary
               : theme.dark.text.secondary
           }

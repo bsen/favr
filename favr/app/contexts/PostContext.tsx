@@ -16,17 +16,31 @@ export interface Post {
   category?: string;
   image?: string;
   profilePicture?: string;
+  status?: "open" | "closed";
+  metrics?: {
+    views: number;
+    responses: number;
+  };
 }
 
 export interface Message {
   id: number;
   price: number | null;
   text: string;
+  threadId: string;
+  senderId: string;
+  receiverId: string;
+  postId: number;
   status: string;
   createdAt: string;
-  user: {
+  sender?: {
     id: string;
-    name: string;
+    fullName: string;
+    profilePicture: string | null;
+  };
+  receiver?: {
+    id: string;
+    fullName: string;
     profilePicture: string | null;
   };
 }
@@ -56,6 +70,9 @@ interface CreateMessageData {
   postId: number;
   price?: number;
   text: string;
+  threadId?: string;
+  senderId?: string;
+  receiverId?: string;
   imageUrls?: string[];
 }
 
@@ -63,12 +80,14 @@ interface PostContextType {
   posts: Post[];
   userPosts: Post[];
   postMessages: Message[];
+  postThreads: Message[][];
   loading: boolean;
   refreshing: boolean;
   error: string | null;
   fetchPosts: (latitude: number, longitude: number) => Promise<void>;
   fetchUserPosts: () => Promise<void>;
   fetchPostMessages: (postId: number) => Promise<void>;
+  fetchThreadMessages: (threadId: string) => Promise<void>;
   createPost: (data: CreatePostData) => Promise<boolean>;
   refreshPosts: () => Promise<void>;
   createMessage: (data: CreateMessageData) => Promise<boolean>;
@@ -99,6 +118,7 @@ export const PostProvider = ({ children }: { children: React.ReactNode }) => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [userPosts, setUserPosts] = useState<Post[]>([]);
   const [postMessages, setPostMessages] = useState<Message[]>([]);
+  const [postThreads, setPostThreads] = useState<Message[][]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -232,6 +252,38 @@ export const PostProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const fetchThreadMessages = async (threadId: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const token = await AsyncStorage.getItem("auth_token");
+      if (!token) throw new Error("No auth token");
+
+      const response = await fetch(
+        `${API_BASE_URL}/message/thread/${threadId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) throw new Error("Failed to fetch thread messages");
+
+      const data = await response.json();
+      setPostThreads(data.messages || []);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to fetch thread messages"
+      );
+      setPostThreads([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const createPost = async (data: CreatePostData): Promise<boolean> => {
     try {
       const token = await AsyncStorage.getItem("auth_token");
@@ -279,13 +331,21 @@ export const PostProvider = ({ children }: { children: React.ReactNode }) => {
       const token = await AsyncStorage.getItem("auth_token");
       if (!token) throw new Error("No auth token");
 
+      const messageData = {
+        postId: data.postId,
+        text: data.text,
+        price: data.price,
+        threadId: data.threadId,
+        imageUrls: data.imageUrls,
+      };
+
       const response = await fetch(`${API_BASE_URL}/message`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(messageData),
       });
 
       if (!response.ok) {
@@ -306,12 +366,14 @@ export const PostProvider = ({ children }: { children: React.ReactNode }) => {
         posts,
         userPosts,
         postMessages,
+        postThreads,
         loading,
         refreshing,
         error,
         fetchPosts,
         fetchUserPosts,
         fetchPostMessages,
+        fetchThreadMessages,
         createPost,
         refreshPosts,
         createMessage,

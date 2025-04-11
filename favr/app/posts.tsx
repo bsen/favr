@@ -25,9 +25,9 @@ export default function UserPosts() {
     setRefreshing(false);
   };
 
-  const navigateToPostDetails = (postId: number) => {
+  const navigateToThreads = (postId: number) => {
     router.push({
-      pathname: "/post-detail",
+      pathname: "/threads",
       params: { postId: postId.toString() },
     });
   };
@@ -76,7 +76,7 @@ export default function UserPosts() {
           userPosts.map((post) => (
             <TouchableOpacity
               key={post.id}
-              onPress={() => navigateToPostDetails(post.id)}
+              onPress={() => navigateToThreads(post.id)}
               style={tw`mb-4 mx-5`}
             >
               <Surface
@@ -117,11 +117,24 @@ export default function UserPosts() {
                         </Text>
                       )}
                     </View>
-                    <Text
-                      style={tw`text-xs text-[${theme.dark.text.secondary}]`}
-                    >
-                      {post.time}
-                    </Text>
+                    <View style={tw`flex-row items-center`}>
+                      {post.metrics?.responses &&
+                        post.metrics.responses > 0 && (
+                          <Text
+                            style={tw`text-xs text-[${theme.dark.text.secondary}] mr-2`}
+                          >
+                            {post.metrics?.responses}{" "}
+                            {post.metrics?.responses === 1
+                              ? "response"
+                              : "responses"}
+                          </Text>
+                        )}
+                      <Text
+                        style={tw`text-xs text-[${theme.dark.text.secondary}]`}
+                      >
+                        {post.time}
+                      </Text>
+                    </View>
                   </View>
                   <Text
                     style={tw`text-[${theme.dark.text.primary}] text-lg font-semibold mb-1`}
@@ -146,6 +159,25 @@ export default function UserPosts() {
                         Free
                       </Text>
                     )}
+                    <View
+                      style={tw.style(`px-2 py-0.5 rounded-full`, {
+                        backgroundColor:
+                          post.status === "open"
+                            ? `${theme.dark.status.success}20`
+                            : `${theme.dark.status.warning}20`,
+                      })}
+                    >
+                      <Text
+                        style={tw.style(`text-xs font-medium capitalize`, {
+                          color:
+                            post.status === "open"
+                              ? theme.dark.status.success
+                              : theme.dark.status.warning,
+                        })}
+                      >
+                        {post.status}
+                      </Text>
+                    </View>
                   </View>
                 </View>
               </Surface>

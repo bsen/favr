@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { View, ScrollView, Platform, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Text, Surface } from "react-native-paper";
+import { Text, Surface, TextInput, IconButton } from "react-native-paper";
 import tw from "twrnc";
 import { theme, commonStyles } from "../../theme";
-import { MagnifyingGlassIcon } from "react-native-heroicons/outline";
+import {
+  MagnifyingGlassIcon,
+} from "react-native-heroicons/outline";
 import { BlurView } from "expo-blur";
 import { router } from "expo-router";
 
@@ -13,40 +15,64 @@ interface HeaderProps {
 }
 
 export default function Header({ onCategorySelect }: HeaderProps) {
-  const categories = ["offer", "request"];
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const categories = ["all", "offerings", "requests"];
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
   const handleProfileNavigation = () => {
     router.push("/profile");
   };
 
   const handleCategoryPress = (category: string) => {
-    const newCategory = selectedCategory === category ? null : category;
-    setSelectedCategory(newCategory);
+    setSelectedCategory(category);
     if (onCategorySelect) {
-      onCategorySelect(newCategory || "all");
+      onCategorySelect(category);
     }
   };
 
   const HeaderContent = () => (
     <>
       <SafeAreaView edges={["top"]}>
-        <View style={tw`flex-row items-center justify-between py-2 px-4`}>
-          <Text style={tw`text-xl font-bold text-[${theme.dark.text.primary}]`}>
-            favr
-          </Text>
-          <View style={tw`flex-row items-center gap-4`}>
-            <MagnifyingGlassIcon size={20} color={theme.dark.text.primary} />
-            <TouchableOpacity onPress={handleProfileNavigation}>
-              <Text style={tw`text-[${theme.dark.text.primary}]`}>Profile</Text>
-            </TouchableOpacity>
+        <View style={tw`px-4 pt-1 pb-0.5`}>
+          <View style={tw`flex-row items-center mb-1 relative`}>
+            <View style={tw`flex-1 mr-2`}>
+              <View
+                style={tw.style(
+                  `flex-row items-center rounded-xl px-2.5 py-1`,
+                  {
+                    backgroundColor: theme.dark.background.tertiary,
+                    borderWidth: 1,
+                    borderColor: theme.dark.background.glass.border,
+                  }
+                )}
+              >
+                <MagnifyingGlassIcon
+                  size={16}
+                  color={theme.dark.text.secondary}
+                />
+                <TextInput
+                  placeholder="Search"
+                  placeholderTextColor={theme.dark.text.secondary}
+                  style={tw`text-sm text-[${theme.dark.text.primary}] bg-transparent flex-1 ml-1.5 h-6`}
+                  underlineColor="transparent"
+                  activeUnderlineColor="transparent"
+                  dense={true}
+                />
+              </View>
+            </View>
+            <IconButton
+              icon="account-outline"
+              size={22}
+              iconColor={theme.dark.text.primary}
+              onPress={handleProfileNavigation}
+              style={tw`m-0 p-0`}
+            />
           </View>
         </View>
       </SafeAreaView>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={tw`gap-2 flex items-center mx-4 py-2 pb-3`}
+        contentContainerStyle={tw`gap-2.5 flex items-center mx-4 py-1 pb-2`}
       >
         {categories.map((category) => (
           <TouchableOpacity
@@ -54,7 +80,7 @@ export default function Header({ onCategorySelect }: HeaderProps) {
             onPress={() => handleCategoryPress(category)}
           >
             <View
-              style={tw.style(`py-1 px-4 flex rounded-full`, {
+              style={tw.style(`py-1 px-3.5 flex rounded-full`, {
                 backgroundColor:
                   selectedCategory === category
                     ? theme.dark.brand.primary
@@ -69,7 +95,7 @@ export default function Header({ onCategorySelect }: HeaderProps) {
                   selectedCategory === category
                     ? theme.dark.text.primary
                     : theme.dark.button.primary.text
-                }] text-center text-sm font-medium capitalize`}
+                }] text-center text-xs font-medium capitalize`}
               >
                 {category}
               </Text>
